@@ -1016,9 +1016,23 @@ function buildQueue(questions) {
     }
   });
   shuffle(erradas); shuffle(novas);
-  atrasadas.sort((a,b) => a.proxima_revisao.localeCompare(b.proxima_revisao));
-  paraHoje.sort((a,b) => a.proxima_revisao.localeCompare(b.proxima_revisao));
-  return [...erradas, ...novas, ...atrasadas, ...paraHoje];
+
+  function sortAndShuffleByDate(lista) {
+    // Agrupa as questões por data
+    const grupos = {};
+    lista.forEach(q => {
+      const data = q.proxima_revisao;
+      if (!grupos[data]) grupos[data] = [];
+      grupos[data].push(q);
+    });
+    // Ordena as datas (mais antiga primeiro) e embaralha dentro de cada grupo
+    return Object.keys(grupos).sort().flatMap(data => shuffle(grupos[data]));
+  }
+
+  const atrasadasOrdenadas = sortAndShuffleByDate(atrasadas);
+  const paraHojeOrdenadas  = sortAndShuffleByDate(paraHoje);
+
+  return [...erradas, ...novas, ...atrasadasOrdenadas, ...paraHojeOrdenadas];
 }
 
 // ═══════════════════════════════════════════════════════
