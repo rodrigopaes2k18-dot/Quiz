@@ -1042,7 +1042,29 @@ function startQuiz() {
   renderQuestion();
 }
 
-function renderQuestion() {
+// Cache de imagens: nome_do_arquivo → url blob
+const imageCache = {};
+
+async function searchImageOnDrive(filename) {
+  // Busca o arquivo pelo nome em todo o Drive
+  const q = `name='${filename}' and trashed=false and mimeType contains 'image/'`;
+  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=5`;
+  const data = await driveGet(url);
+  if (data.files && data.files.length > 0) return data.files[0].id;
+  return null;
+}
+
+async function loadImageAsBlob(fileId) {
+  // Baixa a imagem e converte para URL local (blob)
+  const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!r.ok) throw new Error('Erro ao baixar imagem');
+  const blob = await r.blob();
+  return URL.createObjectURL(blob);
+}
+
+async function renderQuestion() {
   if (currentIndex >= quizQueue.length) { finishSession(); return; }
 
   const q = quizQueue[currentIndex];
@@ -1077,15 +1099,52 @@ function renderQuestion() {
     <button class="option-btn" onclick="checkAnswer(this, '${escStr(op)}')">${escHtml(op)}</button>
   `).join('');
 
+  // Monta o HTML inicial sem imagens ainda
   document.getElementById('quiz-body').innerHTML = `
     <span class="streak-badge ${badgeClass}">${badgeText}</span>
     <div class="question-text">${q.pergunta.replace(/\n/g,'<br>')}</div>
+    <div id="image-container"></div>
     <div class="options">${optsHtml}</div>
     <div class="feedback-box" id="feedback-box"></div>`;
 
   document.getElementById('quiz-actions').innerHTML = `
     <button class="btn btn-danger" style="flex:1" onclick="finishSession()">Encerrar</button>
     <button class="btn btn-primary" style="flex:2;display:none" id="btn-next" onclick="nextQuestion()">Próxima →</button>`;
+
+  // Carrega imagens se existirem
+  const imagens = q.imagens || [];
+  if (imagens.length > 0) {
+    const container = document.getElementById('image-container');
+    container.innerHTML = '<div class="loading" style="padding:16px"><div class="spinner"></div>Carregando imagem...</div>';
+
+    for (const caminho of imagens) {
+      // Extrai apenas o nome do arquivo do caminho completo
+      // Ex: "/content/drive/MyDrive/OGMO/figura.png" → "figura.png"
+      const nomeArquivo = caminho.split('/').pop();
+
+      try {
+        // Verifica se já está no cache para não baixar de novo
+        if (!imageCache[nomeArquivo]) {
+          const fileId = await searchImageOnDrive(nomeArquivo);
+          if (fileId) {
+            imageCache[nomeArquivo] = await loadImageAsBlob(fileId);
+          }
+        }
+
+        if (imageCache[nomeArquivo]) {
+          container.innerHTML = '';
+          const img = document.createElement('img');
+          img.src = imageCache[nomeArquivo];
+          img.style.cssText = 'max-width:100%;border-radius:8px;margin:12px 0;display:block;';
+          container.appendChild(img);
+        } else {
+          container.innerHTML = `<div style="color:var(--text2);font-size:0.8rem;padding:8px">⚠️ Imagem não encontrada: ${escHtml(nomeArquivo)}</div>`;
+        }
+      } catch(e) {
+        container.innerHTML = `<div style="color:var(--red);font-size:0.8rem;padding:8px">❌ Erro ao carregar imagem</div>`;
+      }
+    }
+  }
 }
 
 function escStr(s) {
