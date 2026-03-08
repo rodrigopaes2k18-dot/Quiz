@@ -1764,7 +1764,7 @@ function calcularStreakDias() {
   const d = getBrazilDate();
   while (true) {
     const iso = d.toISOString().split('T')[0];
-    if (historicoData[iso] && historicoData[iso].respondidas > 0) {
+    if (historicoData[iso] && historicoData[iso].respondidas >= metaDiaria) {
       streak++;
       d.setDate(d.getDate() - 1);
     } else { break; }
