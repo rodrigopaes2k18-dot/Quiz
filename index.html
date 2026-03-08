@@ -521,6 +521,219 @@
   .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; color: var(--text); }
   .modal-body { font-size: 0.88rem; color: var(--text2); line-height: 1.6; margin-bottom: 24px; }
   .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+
+  /* ── STATS SCREEN ── */
+  #screen-stats {
+    background: var(--bg);
+    overflow-y: auto;
+    padding: 0 0 40px 0;
+  }
+
+  .stats-section {
+    padding: 16px 16px 0;
+  }
+
+  .stats-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text2);
+    margin-bottom: 12px;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 12px;
+    text-align: center;
+  }
+
+  .stat-card.wide {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    color: var(--text2);
+  }
+
+  /* Meta diária */
+  .meta-bar-wrap {
+    background: var(--border);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+    margin: 8px 0 4px;
+  }
+
+  .meta-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    transition: width 0.4s;
+  }
+
+  /* Gráfico de barras */
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 80px;
+    padding: 0 4px;
+  }
+
+  .bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+
+  .bar-fill {
+    width: 100%;
+    border-radius: 3px 3px 0 0;
+    background: var(--accent);
+    min-height: 2px;
+    transition: height 0.3s;
+  }
+
+  .bar-fill.today { background: var(--accent2); }
+
+  .bar-label {
+    font-size: 0.55rem;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  /* Área/subárea accordion */
+  .area-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .area-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    cursor: pointer;
+    gap: 10px;
+  }
+
+  .area-header:hover { background: var(--surface2); }
+
+  .area-name { flex: 1; font-size: 0.88rem; font-weight: 500; }
+
+  .area-pct {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .area-mini-bar {
+    height: 4px;
+    background: var(--border);
+    margin: 0 14px 10px;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .area-mini-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+  }
+
+  .subarea-list {
+    display: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .subarea-list.open { display: block; }
+
+  .subarea-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px 10px 28px;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .subarea-item:last-child { border-bottom: none; }
+
+  .subarea-name { flex: 1; font-size: 0.82rem; color: var(--text2); }
+
+  .subarea-pct {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+  }
+
+  /* Meta config */
+  .meta-config {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .meta-config input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+  }
+
+  .meta-config-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--accent);
+    min-width: 40px;
+    text-align: right;
+  }
+
+  /* Sort tabs */
+  .sort-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .sort-tab {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+
+  .sort-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+
 </style>
 </head>
 <body>
@@ -549,6 +762,12 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
     <span class="topbar-title">QUIZ</span>
+    <button class="btn-icon" onclick="showStats()" title="Estatísticas">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17V13M12 17V7M16 17v-4"/></svg>
+    </button>
+    <button class="btn-icon" onclick="showStats()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+    </button>
     <button class="btn-icon" onclick="handleLogout()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
     </button>
@@ -723,6 +942,8 @@ function handleLogin() {
       accessToken = resp.access_token;
       showScreen('screen-browser');
       loadFolder(null, 'Meu Drive');
+      carregarHistorico(); // Carrega histórico em background
+      carregarHistorico(); // Pré-carrega histórico em background
     }
   });
   tokenClient.requestAccessToken({ prompt: 'consent' });
@@ -1228,8 +1449,11 @@ async function checkAnswer(btn, resposta) {
     q.acertou_ultima_vez = acertou;
     q.data_resposta = hoje.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
+    // Registra no histórico do dia
+    registrarNoHistorico(acertou);
     // Save async
     saveProgress(q);
+    atualizarHistorico(acertou);
   }
 
   // Feedback
@@ -1302,6 +1526,7 @@ async function saveProgress(q) {
 // RESULTS
 // ═══════════════════════════════════════════════════════
 function finishSession() {
+  salvarHistorico(); // Salva histórico ao finalizar sessão
   showScreen('screen-results');
   const pct = sessionTotal > 0 ? Math.round((sessionCorrect/sessionTotal)*100) : 0;
   document.getElementById('results-score').textContent = pct + '%';
@@ -1324,10 +1549,326 @@ function finishSession() {
   }
   document.getElementById('results-errors').innerHTML = errHtml;
 }
+
+// ═══════════════════════════════════════════════════════
+// HISTÓRICO DIÁRIO
+// ═══════════════════════════════════════════════════════
+
+const HISTORICO_FILENAME = 'quiz_historico.json';
+let historicoFileId = null;   // ID do arquivo no Drive (null = ainda não encontrado)
+let historicoData = {};       // { "2026-03-08": { respondidas, acertos, erros } }
+let metaDiaria = parseInt(localStorage.getItem('metaDiaria') || '50');
+
+// Busca ou cria o arquivo de histórico no Drive
+async function carregarHistorico() {
+  try {
+    const q = `name='${HISTORICO_FILENAME}' and trashed=false`;
+    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=1`;
+    const data = await driveGet(url);
+    if (data.files && data.files.length > 0) {
+      historicoFileId = data.files[0].id;
+      historicoData = await readJsonFile(historicoFileId);
+    } else {
+      // Arquivo não existe ainda — cria vazio
+      historicoData = {};
+      historicoFileId = null;
+    }
+  } catch(e) {
+    historicoData = {};
+  }
+}
+
+// Cria o arquivo de histórico no Drive se ainda não existir
+async function criarArquivoHistorico() {
+  try {
+    const metadata = { name: HISTORICO_FILENAME, mimeType: 'application/json' };
+    const r = await fetch('https://www.googleapis.com/drive/v3/files', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(metadata)
+    });
+    const file = await r.json();
+    historicoFileId = file.id;
+    await driveUpdate(historicoFileId, {});
+    return historicoFileId;
+  } catch(e) {
+    console.error('Erro ao criar histórico:', e);
+    return null;
+  }
+}
+
+// Atualiza o histórico com o resultado de uma questão respondida
+async function atualizarHistorico(acertou) {
+  if (erroConexaoExibido) return;
+  const hoje = isoToday();
+
+  // Inicializa o dia se não existir
+  if (!historicoData[hoje]) {
+    historicoData[hoje] = { respondidas: 0, acertos: 0, erros: 0 };
+  }
+
+  historicoData[hoje].respondidas++;
+  if (acertou) historicoData[hoje].acertos++;
+  else historicoData[hoje].erros++;
+
+  // Salva no Drive
+  try {
+    if (!historicoFileId) await criarArquivoHistorico();
+    if (historicoFileId) await driveUpdate(historicoFileId, historicoData);
+  } catch(e) {
+    console.error('Erro ao salvar histórico:', e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// TELA DE ESTATÍSTICAS
+// ═══════════════════════════════════════════════════════
+
+let statsSort = 'menor'; // 'menor' ou 'maior' acerto
+
+async function showStats() {
+  showScreen('screen-stats');
+  document.getElementById('stats-content').innerHTML =
+    '<div class="loading"><div class="spinner"></div>Calculando...</div>';
+
+  // Carrega histórico se ainda não carregou
+  if (Object.keys(historicoData).length === 0) await carregarHistorico();
+
+  renderStats();
+}
+
+function renderStats() {
+  const hoje = isoToday();
+  const hojeData = historicoData[hoje] || { respondidas: 0, acertos: 0, erros: 0 };
+
+  // ── Streak de dias consecutivos ──────────────────────
+  let streak = 0;
+  let d = new Date(hoje + 'T12:00:00Z');
+  while (true) {
+    const iso = d.toISOString().split('T')[0];
+    if (historicoData[iso] && historicoData[iso].respondidas > 0) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else break;
+  }
+
+  // ── % global de acertos (todos os JSONs carregados) ──
+  const respondidas = allLoadedQuestions.filter(q => q.respondida);
+  const totalRespondidas = respondidas.length;
+  const totalAcertos = respondidas.filter(q => q.acertou_ultima_vez).length;
+  const pctGlobal = totalRespondidas > 0 ? Math.round(totalAcertos / totalRespondidas * 100) : 0;
+
+  // ── Meta diária ──────────────────────────────────────
+  const metaPct = Math.min(100, Math.round(hojeData.respondidas / metaDiaria * 100));
+  const metaCor = metaPct >= 100 ? 'var(--green)' : metaPct >= 60 ? 'var(--accent)' : 'var(--orange)';
+
+  // ── Gráfico 14 dias ──────────────────────────────────
+  const dias14 = [];
+  for (let i = 13; i >= 0; i--) {
+    const d2 = new Date(hoje + 'T12:00:00Z');
+    d2.setDate(d2.getDate() - i);
+    const iso = d2.toISOString().split('T')[0];
+    const label = iso.slice(5);
+    dias14.push({ iso, label, val: (historicoData[iso] || {}).respondidas || 0 });
+  }
+  const maxBar = Math.max(...dias14.map(d => d.val), 1);
+
+  const barsHtml = dias14.map(d => {
+    const h = Math.round((d.val / maxBar) * 64);
+    const isToday = d.iso === hoje;
+    return `<div class="bar-col">
+      <div class="bar-fill ${isToday ? 'today' : ''}" style="height:${h}px" title="${d.val} questões"></div>
+      <div class="bar-label">${isToday ? '📍' : d.label.slice(3)}</div>
+    </div>`;
+  }).join('');
+
+  // ── Por área e subárea ───────────────────────────────
+  const areasMap = {};
+  allLoadedQuestions.filter(q => q.respondida).forEach(q => {
+    const area = q.grande_area || 'Sem área';
+    const sub = q.sub_area || 'Sem subárea';
+    if (!areasMap[area]) areasMap[area] = { acertos: 0, total: 0, subs: {} };
+    areasMap[area].total++;
+    if (q.acertou_ultima_vez) areasMap[area].acertos++;
+    if (!areasMap[area].subs[sub]) areasMap[area].subs[sub] = { acertos: 0, total: 0 };
+    areasMap[area].subs[sub].total++;
+    if (q.acertou_ultima_vez) areasMap[area].subs[sub].acertos++;
+  });
+
+  let areas = Object.entries(areasMap).map(([nome, d]) => ({
+    nome,
+    pct: Math.round(d.acertos / d.total * 100),
+    total: d.total,
+    subs: Object.entries(d.subs).map(([sNome, sd]) => ({
+      nome: sNome,
+      pct: Math.round(sd.acertos / sd.total * 100),
+      total: sd.total
+    }))
+  }));
+
+  // Ordena áreas
+  if (statsSort === 'menor') areas.sort((a, b) => a.pct - b.pct);
+  else areas.sort((a, b) => b.pct - a.pct);
+
+  const areasHtml = areas.map((area, i) => {
+    const cor = area.pct >= 70 ? 'var(--green)' : area.pct >= 50 ? 'var(--accent)' : 'var(--red)';
+    const subsHtml = area.subs
+      .sort((a, b) => statsSort === 'menor' ? a.pct - b.pct : b.pct - a.pct)
+      .map(s => {
+        const sCor = s.pct >= 70 ? 'var(--green)' : s.pct >= 50 ? 'var(--accent)' : 'var(--red)';
+        return `<div class="subarea-item">
+          <span class="subarea-name">${escHtml(s.nome)}</span>
+          <span class="subarea-pct" style="color:${sCor}">${s.pct}%</span>
+          <span style="font-size:0.72rem;color:var(--text2)">(${s.total})</span>
+        </div>`;
+      }).join('');
+
+    return `<div class="area-item">
+      <div class="area-header" onclick="toggleSubarea(${i})">
+        <span class="area-name">${escHtml(area.nome)}</span>
+        <span class="area-pct" style="color:${cor}">${area.pct}%</span>
+        <span style="font-size:0.72rem;color:var(--text2)">(${area.total})</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="chevron-${i}"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="area-mini-bar">
+        <div class="area-mini-bar-fill" style="width:${area.pct}%;background:${cor}"></div>
+      </div>
+      <div class="subarea-list" id="subarea-${i}">${subsHtml}</div>
+    </div>`;
+  }).join('');
+
+  const pctHoje = hojeData.respondidas > 0
+    ? Math.round(hojeData.acertos / hojeData.respondidas * 100) : 0;
+
+  document.getElementById('stats-content').innerHTML = `
+
+    <!-- SEÇÃO 1: VISÃO GERAL -->
+    <div class="stats-section">
+      <div class="stats-section-title">Visão Geral</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--accent)">${pctGlobal}%</div>
+          <div class="stat-label">% acertos global</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--orange)">${streak}🔥</div>
+          <div class="stat-label">dias consecutivos</div>
+        </div>
+        <div class="stat-card wide">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:0.82rem;font-weight:500">Meta diária</span>
+            <span style="font-family:'Space Mono',monospace;font-size:0.85rem;color:${metaCor}">
+              ${hojeData.respondidas} / ${metaDiaria}
+            </span>
+          </div>
+          <div class="meta-bar-wrap">
+            <div class="meta-bar-fill" style="width:${metaPct}%;background:${metaCor}"></div>
+          </div>
+          <div style="font-size:0.72rem;color:var(--text2)">${metaPct >= 100 ? '✅ Meta atingida!' : `Faltam ${Math.max(0, metaDiaria - hojeData.respondidas)} questões`}</div>
+          <div class="meta-config">
+            <span style="font-size:0.75rem;color:var(--text2)">Ajustar meta:</span>
+            <input type="range" min="10" max="200" step="5" value="${metaDiaria}"
+              oninput="atualizarMeta(this.value)">
+            <span class="meta-config-val" id="meta-val">${metaDiaria}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 2: HOJE -->
+    <div class="stats-section">
+      <div class="stats-section-title">Hoje</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--text)">${hojeData.respondidas}</div>
+          <div class="stat-label">respondidas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:${pctHoje >= 70 ? 'var(--green)' : pctHoje >= 50 ? 'var(--accent)' : 'var(--red)'}">${pctHoje}%</div>
+          <div class="stat-label">aproveitamento</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--green)">${hojeData.acertos}</div>
+          <div class="stat-label">acertos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--red)">${hojeData.erros}</div>
+          <div class="stat-label">erros</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 3: EVOLUÇÃO 14 DIAS -->
+    <div class="stats-section">
+      <div class="stats-section-title">Últimos 14 dias</div>
+      <div class="stat-card wide" style="margin-bottom:16px">
+        <div class="bar-chart">${barsHtml}</div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 4: POR ÁREA -->
+    <div class="stats-section">
+      <div class="stats-section-title">Por área e subárea</div>
+      ${totalRespondidas === 0 ? '<div class="empty-state"><div class="icon">📭</div><p>Nenhuma questão respondida ainda nos arquivos selecionados.</p></div>' : `
+      <div class="sort-tabs">
+        <button class="sort-tab ${statsSort === 'menor' ? 'active' : ''}" onclick="setSortStats('menor')">Menor acerto</button>
+        <button class="sort-tab ${statsSort === 'maior' ? 'active' : ''}" onclick="setSortStats('maior')">Maior acerto</button>
+      </div>
+      ${areasHtml}`}
+    </div>
+  `;
+}
+
+function toggleSubarea(i) {
+  const list = document.getElementById('subarea-' + i);
+  const chev = document.getElementById('chevron-' + i);
+  list.classList.toggle('open');
+  chev.style.transform = list.classList.contains('open') ? 'rotate(180deg)' : '';
+}
+
+function setSortStats(ordem) {
+  statsSort = ordem;
+  renderStats();
+}
+
+function atualizarMeta(val) {
+  metaDiaria = parseInt(val);
+  localStorage.setItem('metaDiaria', metaDiaria);
+  document.getElementById('meta-val').textContent = metaDiaria;
+  renderStats();
+}
+
 </script>
 
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+
+<!-- ═══════════════ SCREEN: STATS ═══════════════ -->
+<div id="screen-stats" class="screen">
+  <div class="topbar">
+    <button class="btn-icon" onclick="showScreen('screen-browser')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <span class="topbar-title">Estatísticas</span>
+  </div>
+  <div id="stats-content" style="padding:16px 16px 40px">
+    <div class="loading"><div class="spinner"></div>Calculando...</div>
+  </div>
+</div>
+
+<!-- ═══════════════ SCREEN: STATS ═══════════════ -->
+<div id="screen-stats" class="screen">
+  <div class="topbar">
+    <button class="btn-icon" onclick="showScreen('screen-browser')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <span class="topbar-title">Estatísticas</span>
+  </div>
+  <div id="stats-content" style="padding:0 0 40px 0; overflow-y:auto;">
+    <div class="loading"><div class="spinner"></div>Calculando...</div>
+  </div>
+</div>
 
 <!-- ═══════════════ MODAL: ERRO DE CONEXÃO ═══════════════ -->
 <div class="modal-overlay hidden" id="modal-offline">
@@ -1346,4 +1887,368 @@ function finishSession() {
 </div>
 
 </body>
-</html>
+</html>// ═══════════════════════════════════════════════════════
+// HISTÓRICO E ESTATÍSTICAS
+// ═══════════════════════════════════════════════════════
+
+const HISTORICO_FILENAME = 'quiz_historico.json';
+let historicoFileId = null;      // ID do arquivo de histórico no Drive
+let historicoData = {};          // Conteúdo do histórico em memória
+let metaDiaria = 50;             // Meta padrão de questões por dia
+let sortAreaMode = 'menor';      // Ordenação da seção de áreas
+
+// Carrega ou cria o arquivo de histórico no Drive
+async function carregarHistorico() {
+  try {
+    // Busca o arquivo na raiz do Drive
+    const q = `name='${HISTORICO_FILENAME}' and 'root' in parents and trashed=false`;
+    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`;
+    const data = await driveGet(url);
+
+    if (data.files && data.files.length > 0) {
+      // Arquivo existe — carrega o conteúdo
+      historicoFileId = data.files[0].id;
+      historicoData = await readJsonFile(historicoFileId);
+    } else {
+      // Arquivo não existe — cria vazio
+      historicoData = {};
+      historicoFileId = await criarArquivoHistorico();
+    }
+  } catch(e) {
+    console.error('Erro ao carregar histórico:', e);
+    historicoData = {};
+  }
+}
+
+// Cria o arquivo quiz_historico.json na raiz do Drive
+async function criarArquivoHistorico() {
+  try {
+    const metadata = { name: HISTORICO_FILENAME, mimeType: 'application/json', parents: ['root'] };
+    const blob = new Blob([JSON.stringify({})], { type: 'application/json' });
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', blob);
+    const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: form
+    });
+    const result = await r.json();
+    return result.id;
+  } catch(e) {
+    console.error('Erro ao criar histórico:', e);
+    return null;
+  }
+}
+
+// Salva o histórico atualizado no Drive
+async function salvarHistorico() {
+  if (!historicoFileId || erroConexaoExibido) return;
+  try {
+    await driveUpdate(historicoFileId, historicoData);
+  } catch(e) {
+    console.error('Erro ao salvar histórico:', e);
+  }
+}
+
+// Registra uma resposta no histórico do dia
+function registrarNoHistorico(acertou) {
+  const hoje = isoToday();
+  if (!historicoData[hoje]) {
+    historicoData[hoje] = { respondidas: 0, acertos: 0, erros: 0 };
+  }
+  historicoData[hoje].respondidas++;
+  if (acertou) historicoData[hoje].acertos++;
+  else historicoData[hoje].erros++;
+  // Salva de forma assíncrona a cada 5 respostas para não sobrecarregar
+  if (historicoData[hoje].respondidas % 5 === 0) salvarHistorico();
+}
+
+// ── TELA DE ESTATÍSTICAS ──
+async function showStats() {
+  showScreen('screen-stats');
+  const el = document.getElementById('stats-content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>Calculando...</div>';
+
+  // Garante que o histórico está carregado
+  if (Object.keys(historicoData).length === 0 && historicoFileId === null) {
+    await carregarHistorico();
+  }
+
+  // Precisa de arquivos selecionados para calcular stats dos JSONs
+  const fileIds = Object.keys(selectedFiles);
+  if (fileIds.length === 0) {
+    el.innerHTML = `<div class="empty-state" style="padding:48px 24px">
+      <div class="icon">📂</div>
+      <p>Selecione arquivos na tela principal primeiro para ver as estatísticas.</p>
+    </div>`;
+    return;
+  }
+
+  // Carrega todos os JSONs selecionados
+  let todasQuestoes = [];
+  for (const fid of fileIds) {
+    try {
+      const data = await readJsonFile(fid);
+      if (Array.isArray(data)) todasQuestoes.push(...data);
+    } catch(e) {}
+  }
+
+  renderStats(todasQuestoes);
+}
+
+function renderStats(questoes) {
+  const hoje = isoToday();
+  const el = document.getElementById('stats-content');
+
+  // ── CÁLCULOS GLOBAIS ──
+  const respondidas = questoes.filter(q => q.respondida);
+  const totalRespondidas = respondidas.length;
+  const totalAcertos = respondidas.filter(q => q.acertou_ultima_vez).length;
+  const totalErros = totalRespondidas - totalAcertos;
+  const pctGlobal = totalRespondidas > 0 ? Math.round((totalAcertos / totalRespondidas) * 100) : 0;
+
+  // ── HOJE ──
+  const hojeData = historicoData[hoje] || { respondidas: 0, acertos: 0, erros: 0 };
+  const metaPct = Math.min(100, Math.round((hojeData.respondidas / metaDiaria) * 100));
+  const metaColor = metaPct >= 100 ? 'var(--green)' : metaPct >= 60 ? 'var(--accent)' : 'var(--orange)';
+
+  // ── STREAK DE DIAS ──
+  const streakDias = calcularStreakDias();
+
+  // ── GRÁFICO 14 DIAS ──
+  const graficoHtml = renderGrafico14Dias();
+
+  // ── ÁREAS ──
+  const areasHtml = renderAreas(questoes);
+
+  el.innerHTML = `
+    <!-- SEÇÃO: HOJE -->
+    <div class="stats-section" style="padding-top:20px">
+      <div class="stats-section-title">📅 Hoje</div>
+      <div class="stat-card wide" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:0.85rem;font-weight:600">Meta diária</span>
+          <span style="font-family:'Space Mono',monospace;font-size:0.85rem;color:${metaColor}">
+            ${hojeData.respondidas} / ${metaDiaria}
+          </span>
+        </div>
+        <div class="meta-bar-wrap">
+          <div class="meta-bar-fill" style="width:${metaPct}%;background:${metaColor}"></div>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text2);margin-top:4px">
+          ${metaPct >= 100 ? '🎉 Meta atingida!' : `Faltam ${metaDiaria - hojeData.respondidas} questões`}
+        </div>
+        <!-- Config da meta -->
+        <div class="meta-config" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <span style="font-size:0.78rem;color:var(--text2)">Meta:</span>
+          <input type="range" min="10" max="200" step="10" value="${metaDiaria}"
+            oninput="atualizarMeta(this.value)" style="flex:1;accent-color:var(--accent)">
+          <span class="meta-config-val" id="meta-val">${metaDiaria}</span>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--accent)">${hojeData.respondidas}</div>
+          <div class="stat-label">Respondidas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:${streakDias >= 7 ? 'var(--orange)' : 'var(--accent)'}">${streakDias}🔥</div>
+          <div class="stat-label">Dias seguidos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--green)">${hojeData.acertos}</div>
+          <div class="stat-label">Acertos hoje</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--red)">${hojeData.erros}</div>
+          <div class="stat-label">Erros hoje</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO: VISÃO GERAL -->
+    <div class="stats-section">
+      <div class="stats-section-title">📊 Visão Geral (arquivos selecionados)</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--accent)">${pctGlobal}%</div>
+          <div class="stat-label">% de acertos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--text)">${totalRespondidas}</div>
+          <div class="stat-label">Respondidas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--green)">${totalAcertos}</div>
+          <div class="stat-label">Acertos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--red)">${totalErros}</div>
+          <div class="stat-label">Erros</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO: EVOLUÇÃO 14 DIAS -->
+    <div class="stats-section">
+      <div class="stats-section-title">📈 Últimos 14 dias</div>
+      <div class="stat-card wide" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px">
+        ${graficoHtml}
+      </div>
+    </div>
+
+    <!-- SEÇÃO: ÁREAS -->
+    <div class="stats-section">
+      <div class="stats-section-title">🎯 Por Área e Subárea</div>
+      <div class="sort-tabs">
+        <button class="sort-tab ${sortAreaMode==='menor'?'active':''}" onclick="setSortArea('menor')">Menor acerto</button>
+        <button class="sort-tab ${sortAreaMode==='maior'?'active':''}" onclick="setSortArea('maior')">Maior acerto</button>
+        <button class="sort-tab ${sortAreaMode==='az'?'active':''}" onclick="setSortArea('az')">A-Z</button>
+      </div>
+      ${areasHtml}
+    </div>`;
+}
+
+function atualizarMeta(val) {
+  metaDiaria = parseInt(val);
+  document.getElementById('meta-val').textContent = val;
+  // Atualiza a barra e textos sem re-renderizar tudo
+  const hojeData = historicoData[isoToday()] || { respondidas: 0, acertos: 0, erros: 0 };
+  const metaPct = Math.min(100, Math.round((hojeData.respondidas / metaDiaria) * 100));
+  const metaColor = metaPct >= 100 ? 'var(--green)' : metaPct >= 60 ? 'var(--accent)' : 'var(--orange)';
+  document.querySelector('.meta-bar-fill').style.width = metaPct + '%';
+  document.querySelector('.meta-bar-fill').style.background = metaColor;
+}
+
+function calcularStreakDias() {
+  // Conta dias consecutivos com pelo menos 1 questão respondida até hoje
+  let streak = 0;
+  const d = getBrazilDate();
+  while (true) {
+    const iso = d.toISOString().split('T')[0];
+    if (historicoData[iso] && historicoData[iso].respondidas > 0) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function renderGrafico14Dias() {
+  const dias = [];
+  const d = getBrazilDate();
+  // Monta array dos últimos 14 dias
+  for (let i = 13; i >= 0; i--) {
+    const dd = new Date(d);
+    dd.setDate(dd.getDate() - i);
+    const iso = dd.toISOString().split('T')[0];
+    const label = `${dd.getDate()}/${dd.getMonth()+1}`;
+    const val = historicoData[iso] ? historicoData[iso].respondidas : 0;
+    dias.push({ iso, label, val });
+  }
+
+  const maxVal = Math.max(...dias.map(d => d.val), 1);
+  const hoje = isoToday();
+
+  const bars = dias.map(d => {
+    const h = Math.round((d.val / maxVal) * 70);
+    const isHoje = d.iso === hoje;
+    const metaLine = Math.round((metaDiaria / maxVal) * 70);
+    return `<div class="bar-col">
+      <div class="bar-fill ${isHoje?'today':''}" style="height:${h}px" title="${d.val} questões"></div>
+      <div class="bar-label">${d.label}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="bar-chart">${bars}</div>
+    <div style="font-size:0.72rem;color:var(--text2);margin-top:8px;text-align:center">
+      Barra rosa = hoje · Meta: ${metaDiaria} questões/dia
+    </div>`;
+}
+
+function renderAreas(questoes) {
+  // Agrupa por grande_area → sub_area
+  const areas = {};
+  questoes.forEach(q => {
+    const area = q.grande_area || 'Sem área';
+    const sub = q.sub_area || 'Sem subárea';
+    if (!areas[area]) areas[area] = {};
+    if (!areas[area][sub]) areas[area][sub] = { total: 0, acertos: 0 };
+    if (q.respondida) {
+      areas[area][sub].total++;
+      if (q.acertou_ultima_vez) areas[area][sub].acertos++;
+    }
+  });
+
+  // Calcula % por área
+  const areaStats = Object.keys(areas).map(area => {
+    const subs = areas[area];
+    const total = Object.values(subs).reduce((s, v) => s + v.total, 0);
+    const acertos = Object.values(subs).reduce((s, v) => s + v.acertos, 0);
+    const pct = total > 0 ? Math.round((acertos / total) * 100) : 0;
+    return { area, subs, total, acertos, pct };
+  });
+
+  // Ordena conforme sortAreaMode
+  if (sortAreaMode === 'menor') areaStats.sort((a, b) => a.pct - b.pct);
+  else if (sortAreaMode === 'maior') areaStats.sort((a, b) => b.pct - a.pct);
+  else areaStats.sort((a, b) => a.area.localeCompare(b.area));
+
+  return areaStats.map((a, i) => {
+    const pctColor = a.pct >= 70 ? 'var(--green)' : a.pct >= 40 ? 'var(--orange)' : 'var(--red)';
+
+    // Subáreas ordenadas igual às áreas
+    const subEntries = Object.entries(a.subs).map(([sub, s]) => ({
+      sub, total: s.total, acertos: s.acertos,
+      pct: s.total > 0 ? Math.round((s.acertos / s.total) * 100) : 0
+    }));
+    if (sortAreaMode === 'menor') subEntries.sort((a, b) => a.pct - b.pct);
+    else if (sortAreaMode === 'maior') subEntries.sort((a, b) => b.pct - a.pct);
+    else subEntries.sort((a, b) => a.sub.localeCompare(b.sub));
+
+    const subsHtml = subEntries.map(s => {
+      const sc = s.pct >= 70 ? 'var(--green)' : s.pct >= 40 ? 'var(--orange)' : 'var(--red)';
+      return `<div class="subarea-item">
+        <span class="subarea-name">${s.sub}</span>
+        <span style="font-size:0.72rem;color:var(--text2);margin-right:8px">${s.acertos}/${s.total}</span>
+        <span class="subarea-pct" style="color:${sc}">${s.pct}%</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="area-item">
+      <div class="area-header" onclick="toggleArea('area-${i}')">
+        <span class="area-name">${a.area}</span>
+        <span style="font-size:0.72rem;color:var(--text2);margin-right:8px">${a.acertos}/${a.total}</span>
+        <span class="area-pct" style="color:${pctColor}">${a.pct}%</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="area-mini-bar">
+        <div class="area-mini-bar-fill" style="width:${a.pct}%;background:${pctColor}"></div>
+      </div>
+      <div class="subarea-list" id="area-${i}">${subsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleArea(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+function setSortArea(mode) {
+  sortAreaMode = mode;
+  // Re-renderiza só a seção de áreas
+  const fileIds = Object.keys(selectedFiles);
+  if (fileIds.length === 0) return;
+  // Usa as questões já carregadas em allLoadedQuestions
+  const areasEl = document.querySelector('.sort-tabs').parentElement;
+  document.querySelectorAll('.sort-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  areasEl.querySelector('.sort-tabs').nextElementSibling && areasEl.querySelector('.sort-tabs').nextElementSibling.remove();
+  const div = document.createElement('div');
+  div.innerHTML = renderAreas(allLoadedQuestions);
+  Array.from(div.children).forEach(c => areasEl.appendChild(c));
+}
