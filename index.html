@@ -495,6 +495,32 @@
   }
   .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
   .empty-state p { font-size: 0.85rem; line-height: 1.6; }
+
+  /* ── MODAL DE ERRO DE CONEXÃO ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 24px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+  }
+  .modal-icon { font-size: 3rem; margin-bottom: 16px; }
+  .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+  .modal-body { font-size: 0.88rem; color: var(--text2); line-height: 1.6; margin-bottom: 24px; }
+  .modal-actions { display: flex; flex-direction: column; gap: 10px; }
 </style>
 </head>
 <body>
@@ -1230,7 +1256,26 @@ function nextQuestion() {
   renderQuestion();
 }
 
+// Controla se o modal de erro de conexão já foi exibido nesta sessão
+let erroConexaoExibido = false;
+
+function continuarSemSalvar() {
+  // Usuário escolheu continuar — não mostra o modal de novo nesta sessão
+  erroConexaoExibido = true;
+  document.getElementById('modal-offline').classList.add('hidden');
+}
+
+function voltarAoMenu() {
+  // Usuário escolheu voltar — reseta tudo e vai para o browser
+  document.getElementById('modal-offline').classList.add('hidden');
+  erroConexaoExibido = false;
+  showScreen('screen-browser');
+}
+
 async function saveProgress(q) {
+  // Se usuário já escolheu continuar sem salvar, não tenta mais
+  if (erroConexaoExibido) return;
+
   try {
     const fileId = q._fileId;
     if (!fileId) return;
@@ -1246,7 +1291,10 @@ async function saveProgress(q) {
     }
   } catch (e) {
     console.error('Save error:', e);
-    showToast('⚠️ Erro ao salvar progresso');
+    // Mostra modal grande na primeira falha de conexão
+    if (!erroConexaoExibido) {
+      document.getElementById('modal-offline').classList.remove('hidden');
+    }
   }
 }
 
@@ -1280,5 +1328,22 @@ function finishSession() {
 
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- ═══════════════ MODAL: ERRO DE CONEXÃO ═══════════════ -->
+<div class="modal-overlay hidden" id="modal-offline">
+  <div class="modal-box">
+    <div class="modal-icon">📡</div>
+    <div class="modal-title">Sem conexão com o Drive</div>
+    <div class="modal-body">
+      Não foi possível salvar seu progresso.<br><br>
+      Você pode <b>continuar estudando</b> sem salvar, ou <b>voltar ao menu</b> e tentar novamente quando tiver internet.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="continuarSemSalvar()">Continuar sem salvar</button>
+      <button class="btn btn-secondary" onclick="voltarAoMenu()">Voltar ao menu</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
