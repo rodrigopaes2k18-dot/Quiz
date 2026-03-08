@@ -940,7 +940,6 @@ function handleLogin() {
       showScreen('screen-browser');
       loadFolder(null, 'Meu Drive');
       carregarHistorico(); // Carrega histórico em background
-      carregarHistorico(); // Pré-carrega histórico em background
     }
   });
   tokenClient.requestAccessToken({ prompt: 'consent' });
@@ -1559,6 +1558,7 @@ let historicoFileId = null;
 let historicoData = {};
 let metaDiaria = 50;
 let sortAreaMode = 'menor';
+let statsQuestoes = []; // questões carregadas para a tela de stats
 
 async function carregarHistorico() {
   try {
@@ -1641,6 +1641,7 @@ async function showStats() {
     } catch(e) {}
   }
 
+  statsQuestoes = todasQuestoes; // guarda para uso em setSortArea
   renderStats(todasQuestoes);
 }
 
@@ -1840,7 +1841,7 @@ function setSortArea(mode) {
   const modeMap = { menor: 0, maior: 1, az: 2 };
   if (tabs[modeMap[mode]]) tabs[modeMap[mode]].classList.add('active');
   const list = document.getElementById('areas-list');
-  if (list) list.innerHTML = renderAreas(allLoadedQuestions);
+  if (list) list.innerHTML = renderAreas(statsQuestoes);
 }
 
 </script>
