@@ -1207,12 +1207,18 @@ async function checkAnswer(btn, resposta) {
   }
 
   // Feedback
+  const explicacaoOpcao = (q.explicacoes_opcoes && q.explicacoes_opcoes[resposta]) ? q.explicacoes_opcoes[resposta] : '';
+  const explicacaoGeral = q.explicacao || '';
+  let explicacaoHtml = '';
+  if (explicacaoOpcao) {
+    explicacaoHtml += `<div class="feedback-explanation" style="margin-bottom:8px"><b>Sua escolha:</b> ${explicacaoOpcao.replace(/\n/g,'<br>')}</div>`;
+  }
+  if (explicacaoGeral) {
+    explicacaoHtml += `<div class="feedback-explanation"><b>💡 Explicação:</b> ${explicacaoGeral.replace(/\n/g,'<br>')}</div>`;
+  }
   const fb = document.getElementById('feedback-box');
   fb.classList.add('show');
-  fb.innerHTML = `
-    <div class="feedback-result ${acertou ? 'correct' : 'wrong'}">${acertou ? '✅ Correto!' : `❌ Errou! Correta: ${q.resposta_correta}`}</div>
-    <div class="feedback-explanation">${(q.explicacao||'').replace(/\n/g,'<br>')}</div>
-    ${srsMode ? `<div class="feedback-schedule">📅 ${msgRev}</div>` : '<div class="feedback-schedule">🚫 Modo Livre: progresso não salvo</div>'}`;
+  fb.innerHTML = `${explicacaoHtml}${srsMode ? `<div class="feedback-schedule">📅 ${msgRev}</div>` : '<div class="feedback-schedule">🚫 Modo Livre: progresso não salvo</div>'}`;
 
   document.getElementById('btn-next').style.display = 'block';
   document.getElementById('score-text').textContent = `${sessionCorrect}✓`;
