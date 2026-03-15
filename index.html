@@ -1760,8 +1760,12 @@ function confirmarMeta() {
 }
 
 function calcularStreakDias() {
+  const hoje = isoToday();
   let streak = 0;
+
+  // Dias anteriores: só conta se bateu a meta
   const d = getBrazilDate();
+  d.setDate(d.getDate() - 1); // começa em ontem
   while (true) {
     const iso = d.toISOString().split('T')[0];
     if (historicoData[iso] && historicoData[iso].respondidas >= metaDiaria) {
@@ -1769,6 +1773,11 @@ function calcularStreakDias() {
       d.setDate(d.getDate() - 1);
     } else { break; }
   }
+
+  // Hoje: só adiciona se já bateu a meta hoje
+  const hojeData = historicoData[hoje];
+  if (hojeData && hojeData.respondidas >= metaDiaria) streak++;
+
   return streak;
 }
 
