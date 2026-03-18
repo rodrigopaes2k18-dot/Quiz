@@ -1399,7 +1399,7 @@ async function renderQuestion() {
   document.getElementById('score-text').textContent = `${sessionCorrect}✓`;
 
   // Atualiza barra da meta diária
-  const _metaFeitas = (historicoData[isoToday()] && historicoData[isoToday()].respondidas) || 0;
+  const _metaFeitas = (historicoData[isoToday()] && historicoData[isoToday()].meta) || 0;
   const _metaPct = Math.min(100, Math.round((_metaFeitas / metaDiaria) * 100));
   const _metaEl = document.getElementById('meta-progress-fill');
   const _metaTxt = document.getElementById('meta-progress-text');
@@ -1509,7 +1509,7 @@ async function checkAnswer(btn, resposta) {
     q.data_resposta = hoje.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
     // Registra no histórico do dia
-    registrarNoHistorico(acertou);
+    registrarNoHistorico(acertou, q);
     // Save async
     saveProgress(q);
   }
@@ -1683,7 +1683,7 @@ async function salvarHistorico() {
   }
 }
 
-function registrarNoHistorico(acertou) {
+function registrarNoHistorico(acertou, q) {
   const hoje = isoToday();
   if (!historicoData[hoje]) {
     historicoData[hoje] = { respondidas: 0, acertos: 0, erros: 0 };
@@ -1691,6 +1691,15 @@ function registrarNoHistorico(acertou) {
   historicoData[hoje].respondidas++;
   if (acertou) historicoData[hoje].acertos++;
   else historicoData[hoje].erros++;
+
+  // Conta para a meta apenas novas e revisões — não erradas anteriores
+  // Errada anterior: streak === 0 E proxima_revisao preenchida (foi errada antes)
+  const ehErradaAnterior = q && (q.streak === 0) && !!q.proxima_revisao;
+  if (!ehErradaAnterior) {
+    if (!historicoData[hoje].meta) historicoData[hoje].meta = 0;
+    historicoData[hoje].meta++;
+  }
+
   if (historicoData[hoje].respondidas % 5 === 0) salvarHistorico();
 }
 
@@ -1748,7 +1757,7 @@ function renderStats(questoes) {
   // Hoje
   const hojeData = historicoData[hoje] || { respondidas: 0, acertos: 0, erros: 0 };
   const aprovHoje = hojeData.respondidas > 0 ? Math.round((hojeData.acertos / hojeData.respondidas) * 100) : 0;
-  const metaPct = Math.min(100, Math.round((hojeData.respondidas / metaDiaria) * 100));
+  const metaPct = Math.min(100, Math.round(((hojeData.meta || 0) / metaDiaria) * 100));
   const metaColor = metaPct >= 100 ? 'var(--green)' : metaPct >= 60 ? 'var(--accent)' : 'var(--orange)';
 
   // Streak
@@ -1766,10 +1775,10 @@ function renderStats(questoes) {
       '<div class="stat-card wide" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
           '<span style="font-size:0.85rem;font-weight:600">Meta diária</span>' +
-          '<span id="meta-count" style="font-family:\'Space Mono\',monospace;font-size:0.85rem;color:' + metaColor + '">' + hojeData.respondidas + ' / ' + metaDiaria + '</span>' +
+          '<span id="meta-count" style="font-family:\'Space Mono\',monospace;font-size:0.85rem;color:' + metaColor + '">' + (hojeData.meta || 0) + ' / ' + metaDiaria + '</span>' +
         '</div>' +
         '<div class="meta-bar-wrap"><div class="meta-bar-fill" id="meta-bar" style="width:' + metaPct + '%;background:' + metaColor + '"></div></div>' +
-        '<div id="meta-texto" style="font-size:0.72rem;color:var(--text2);margin-top:4px">' + (metaPct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaDiaria - hojeData.respondidas) + ' questões') + '</div>' +
+        '<div id="meta-texto" style="font-size:0.72rem;color:var(--text2);margin-top:4px">' + (metaPct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaDiaria - (hojeData.meta || 0)) + ' questões') + '</div>' +
         '<div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)" id="meta-display">' +
           '<span style="font-size:0.78rem;color:var(--text2)">Meta diária:</span>' +
           '<span style="font-family:\'Space Mono\',monospace;font-size:0.95rem;color:var(--accent);font-weight:700">' + metaDiaria + ' questões</span>' +
@@ -1838,14 +1847,14 @@ function confirmarMeta() {
   disp.querySelector('span:nth-child(2)').textContent = metaDiaria + ' questões';
   // Recalcula barra
   const hojeData = historicoData[isoToday()] || { respondidas: 0, acertos: 0, erros: 0 };
-  const metaPct = Math.min(100, Math.round((hojeData.respondidas / metaDiaria) * 100));
+  const metaPct = Math.min(100, Math.round(((hojeData.meta || 0) / metaDiaria) * 100));
   const metaColor = metaPct >= 100 ? 'var(--green)' : metaPct >= 60 ? 'var(--accent)' : 'var(--orange)';
   const bar = document.getElementById('meta-bar');
   if (bar) { bar.style.width = metaPct + '%'; bar.style.background = metaColor; }
   const metaTexto = document.getElementById('meta-texto');
-  if (metaTexto) metaTexto.textContent = metaPct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaDiaria - hojeData.respondidas) + ' questões';
+  if (metaTexto) metaTexto.textContent = metaPct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaDiaria - (hojeData.meta || 0)) + ' questões';
   const metaCount = document.getElementById('meta-count');
-  if (metaCount) metaCount.textContent = hojeData.respondidas + ' / ' + metaDiaria;
+  if (metaCount) metaCount.textContent = (hojeData.meta || 0) + ' / ' + metaDiaria;
   metaCount && (metaCount.style.color = metaColor);
 }
 
@@ -1858,7 +1867,7 @@ function calcularStreakDias() {
   d.setDate(d.getDate() - 1); // começa em ontem
   while (true) {
     const iso = d.toISOString().split('T')[0];
-    if (historicoData[iso] && historicoData[iso].respondidas >= metaDiaria) {
+    if (historicoData[iso] && (historicoData[iso].meta || 0) >= metaDiaria) {
       streak++;
       d.setDate(d.getDate() - 1);
     } else { break; }
@@ -1866,7 +1875,7 @@ function calcularStreakDias() {
 
   // Hoje: só adiciona se já bateu a meta hoje
   const hojeData = historicoData[hoje];
-  if (hojeData && hojeData.respondidas >= metaDiaria) streak++;
+  if (hojeData && (hojeData.meta || 0) >= metaDiaria) streak++;
 
   return streak;
 }
