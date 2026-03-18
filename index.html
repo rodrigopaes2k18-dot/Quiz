@@ -283,6 +283,29 @@
     transition: width 0.3s;
   }
 
+  .meta-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.72rem;
+    color: var(--text2);
+    padding: 4px 0 0;
+  }
+  .meta-progress-bar {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .meta-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--accent));
+    border-radius: 2px;
+    transition: width 0.3s;
+  }h 0.3s;
+  }
+
   .quiz-body { padding: 20px 16px 120px; }
 
   .streak-badge {
@@ -833,6 +856,10 @@
       <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
       <span id="score-text">0✓</span>
     </div>
+    <div class="meta-progress-row">
+      <span id="meta-progress-text" style="white-space:nowrap">Meta: 0/0</span>
+      <div class="meta-progress-bar"><div class="meta-progress-fill" id="meta-progress-fill" style="width:0%"></div></div>
+    </div>
   </div>
 
   <div class="quiz-body" id="quiz-body"></div>
@@ -1321,6 +1348,16 @@ async function loadImageAsBlob(fileId) {
   return URL.createObjectURL(blob);
 }
 
+function updateMetaBar() {
+  const hoje = isoToday();
+  const feitas = (historicoData[hoje] && historicoData[hoje].meta) || 0;
+  const pct = Math.min(100, Math.round((feitas / metaDiaria) * 100));
+  const el = document.getElementById('meta-progress-fill');
+  const txt = document.getElementById('meta-progress-text');
+  if (el) el.style.width = pct + '%';
+  if (txt) txt.textContent = 'Meta: ' + feitas + '/' + metaDiaria;
+}
+
 async function renderQuestion() {
   if (currentIndex >= quizQueue.length) { finishSession(); return; }
 
@@ -1342,6 +1379,7 @@ async function renderQuestion() {
   document.getElementById('progress-text').textContent = `${currentIndex+1}/${quizQueue.length}`;
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('score-text').textContent = `${sessionCorrect}✓`;
+  updateMetaBar();
 
   // Badge
   let badgeClass = 'nova', badgeText = '🌱 Nova';
@@ -1445,8 +1483,9 @@ async function checkAnswer(btn, resposta) {
     q.acertou_ultima_vez = acertou;
     q.data_resposta = hoje.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
-    // Registra no histórico do dia
-    registrarNoHistorico(acertou);
+    // Registra no histórico do dia (passa q para filtrar erradas anteriores)
+    registrarNoHistorico(acertou, q);
+    updateMetaBar();
     // Save async
     saveProgress(q);
   }
@@ -1606,14 +1645,23 @@ async function salvarHistorico() {
   }
 }
 
-function registrarNoHistorico(acertou) {
+function registrarNoHistorico(acertou, q) {
   const hoje = isoToday();
   if (!historicoData[hoje]) {
-    historicoData[hoje] = { respondidas: 0, acertos: 0, erros: 0 };
+    historicoData[hoje] = { respondidas: 0, acertos: 0, erros: 0, meta: 0 };
   }
   historicoData[hoje].respondidas++;
   if (acertou) historicoData[hoje].acertos++;
   else historicoData[hoje].erros++;
+
+  // Conta para a meta apenas questões novas ou de revisão (não erradas anteriores)
+  // Errada anterior = streak === 0 E proxima_revisao preenchida
+  const ehErradaAnterior = q && (q.streak === 0) && q.proxima_revisao;
+  if (!ehErradaAnterior) {
+    if (!historicoData[hoje].meta) historicoData[hoje].meta = 0;
+    historicoData[hoje].meta++;
+  }
+
   if (historicoData[hoje].respondidas % 5 === 0) salvarHistorico();
 }
 
@@ -1763,12 +1811,13 @@ function calcularStreakDias() {
   const hoje = isoToday();
   let streak = 0;
 
-  // Dias anteriores: só conta se bateu a meta
+  // Dias anteriores: só conta se bateu a meta (usando contagem .meta)
   const d = getBrazilDate();
-  d.setDate(d.getDate() - 1); // começa em ontem
+  d.setDate(d.getDate() - 1);
   while (true) {
     const iso = d.toISOString().split('T')[0];
-    if (historicoData[iso] && historicoData[iso].respondidas >= metaDiaria) {
+    const metaFeita = historicoData[iso] && (historicoData[iso].meta || 0) >= metaDiaria;
+    if (metaFeita) {
       streak++;
       d.setDate(d.getDate() - 1);
     } else { break; }
@@ -1776,7 +1825,7 @@ function calcularStreakDias() {
 
   // Hoje: só adiciona se já bateu a meta hoje
   const hojeData = historicoData[hoje];
-  if (hojeData && hojeData.respondidas >= metaDiaria) streak++;
+  if (hojeData && (hojeData.meta || 0) >= metaDiaria) streak++;
 
   return streak;
 }
