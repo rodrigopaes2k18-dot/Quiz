@@ -914,6 +914,8 @@ let accessToken = null;
 let folderStack = []; // [{id, name}]
 let selectedFiles = {}; // {fileId: {id, name, parentId}}
 let allLoadedQuestions = [];
+let jsonCache = {}; // {fileId: [questoes]} — cache em memória dos JSONs
+let cacheValid = false; // false = precisa recarregar
 
 // Quiz state
 let quizQueue = [];
@@ -1153,6 +1155,7 @@ function toggleFile(fileId, fileName, folderId) {
   } else {
     selectedFiles[fileId] = { id: fileId, name: fileName, folderId };
   }
+  cacheValid = false; // seleção mudou → cache inválido
   const chk = document.getElementById(`check-${fileId}`);
   if (chk) chk.className = `file-check ${selectedFiles[fileId] ? 'checked' : ''}`;
   updateSelectedCount();
@@ -1192,20 +1195,27 @@ async function showFilters() {
   const statsEl = document.getElementById('stats-preview');
   statsEl.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando questões...</div>';
 
-  // Load all selected files
-  allLoadedQuestions = [];
-  const fileIds = Object.keys(selectedFiles);
+  // Carrega arquivos em paralelo, usando cache se disponível
+  if (!cacheValid) {
+    allLoadedQuestions = [];
+    const fileIds = Object.keys(selectedFiles);
 
-  for (const fid of fileIds) {
-    try {
-      const data = await readJsonFile(fid);
-      if (Array.isArray(data)) {
-        data.forEach(q => { q._fileId = fid; q._fileName = selectedFiles[fid].name; });
-        allLoadedQuestions.push(...data);
+    const results = await Promise.all(fileIds.map(async (fid) => {
+      try {
+        const data = await readJsonFile(fid);
+        if (Array.isArray(data)) {
+          data.forEach(q => { q._fileId = fid; q._fileName = selectedFiles[fid].name; });
+          jsonCache[fid] = data;
+          return data;
+        }
+      } catch (e) {
+        showToast(`⚠️ Erro ao ler ${selectedFiles[fid].name}`);
       }
-    } catch (e) {
-      showToast(`⚠️ Erro ao ler ${selectedFiles[fid].name}`);
-    }
+      return [];
+    }));
+
+    results.forEach(data => allLoadedQuestions.push(...data));
+    cacheValid = true;
   }
 
   // Populate filters
@@ -1545,25 +1555,39 @@ function voltarAoMenu() {
 }
 
 async function saveProgress(q) {
-  // Se usuário já escolheu continuar sem salvar, não tenta mais
   if (erroConexaoExibido) return;
 
   try {
     const fileId = q._fileId;
     if (!fileId) return;
-    const data = await readJsonFile(fileId);
-    const idx = data.findIndex(x => x.id === q.id);
-    if (idx >= 0) {
-      data[idx].respondida = q.respondida;
-      data[idx].acertou_ultima_vez = q.acertou_ultima_vez;
-      data[idx].streak = q.streak;
-      data[idx].proxima_revisao = q.proxima_revisao;
-      data[idx].data_resposta = q.data_resposta;
-      await driveUpdate(fileId, data);
+
+    // Atualiza no cache em memória
+    if (jsonCache[fileId]) {
+      const idx = jsonCache[fileId].findIndex(x => x.id === q.id);
+      if (idx >= 0) {
+        jsonCache[fileId][idx].respondida = q.respondida;
+        jsonCache[fileId][idx].acertou_ultima_vez = q.acertou_ultima_vez;
+        jsonCache[fileId][idx].streak = q.streak;
+        jsonCache[fileId][idx].proxima_revisao = q.proxima_revisao;
+        jsonCache[fileId][idx].data_resposta = q.data_resposta;
+      }
+      // Salva o arquivo inteiro já atualizado — sem precisar reler do Drive
+      await driveUpdate(fileId, jsonCache[fileId]);
+    } else {
+      // Fallback: sem cache, relê do Drive (comportamento antigo)
+      const data = await readJsonFile(fileId);
+      const idx = data.findIndex(x => x.id === q.id);
+      if (idx >= 0) {
+        data[idx].respondida = q.respondida;
+        data[idx].acertou_ultima_vez = q.acertou_ultima_vez;
+        data[idx].streak = q.streak;
+        data[idx].proxima_revisao = q.proxima_revisao;
+        data[idx].data_resposta = q.data_resposta;
+        await driveUpdate(fileId, data);
+      }
     }
   } catch (e) {
     console.error('Save error:', e);
-    // Mostra modal grande na primeira falha de conexão
     if (!erroConexaoExibido) {
       document.getElementById('modal-offline').classList.remove('hidden');
     }
@@ -1679,21 +1703,34 @@ async function showStats() {
     await carregarHistorico();
   }
 
-  const fileIds = Object.keys(selectedFiles);
-  if (fileIds.length === 0) {
+  if (Object.keys(selectedFiles).length === 0) {
     el.innerHTML = '<div class="empty-state" style="padding:48px 24px"><div class="icon">📂</div><p>Selecione arquivos na tela principal primeiro para ver as estatísticas.</p></div>';
     return;
   }
 
+  // Usa cache se disponível, senão carrega do Drive
   let todasQuestoes = [];
-  for (const fid of fileIds) {
-    try {
-      const data = await readJsonFile(fid);
-      if (Array.isArray(data)) todasQuestoes.push(...data);
-    } catch(e) {}
+  if (cacheValid && allLoadedQuestions.length > 0) {
+    todasQuestoes = allLoadedQuestions;
+  } else {
+    const fileIds = Object.keys(selectedFiles);
+    const results = await Promise.all(fileIds.map(async (fid) => {
+      try {
+        const data = await readJsonFile(fid);
+        if (Array.isArray(data)) {
+          data.forEach(q => { q._fileId = fid; q._fileName = selectedFiles[fid].name; });
+          jsonCache[fid] = data;
+          return data;
+        }
+      } catch(e) {}
+      return [];
+    }));
+    results.forEach(data => todasQuestoes.push(...data));
+    allLoadedQuestions = todasQuestoes;
+    cacheValid = true;
   }
 
-  statsQuestoes = todasQuestoes; // guarda para uso em setSortArea
+  statsQuestoes = todasQuestoes;
   renderStats(todasQuestoes);
 }
 
