@@ -888,6 +888,21 @@
 // ═══════════════════════════════════════════════════════
 const CLIENT_ID = '345044710042-armqofhvfj88b7gpaf5e0j4phvb6j7fb.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/drive';
+const TOKEN_KEY = 'quiz_access_token';
+const TOKEN_TS_KEY = 'quiz_token_ts';
+const TOKEN_TTL = 55 * 60 * 1000; // 55 minutos em ms
+
+// Tenta restaurar sessão salva ao carregar a página
+window.addEventListener('load', function() {
+  const saved = localStorage.getItem(TOKEN_KEY);
+  const ts = parseInt(localStorage.getItem(TOKEN_TS_KEY) || '0');
+  if (saved && (Date.now() - ts) < TOKEN_TTL) {
+    accessToken = saved;
+    showScreen('screen-browser');
+    loadFolder(null, 'Meu Drive');
+    carregarHistorico();
+  }
+});
 
 // ═══════════════════════════════════════════════════════
 // STATE
@@ -963,17 +978,21 @@ function handleLogin() {
     callback: (resp) => {
       if (resp.error) { showToast('❌ Erro no login'); return; }
       accessToken = resp.access_token;
+      localStorage.setItem(TOKEN_KEY, accessToken);
+      localStorage.setItem(TOKEN_TS_KEY, Date.now().toString());
       showScreen('screen-browser');
       loadFolder(null, 'Meu Drive');
-      carregarHistorico(); // Carrega histórico em background
+      carregarHistorico();
     }
   });
-  tokenClient.requestAccessToken({ prompt: 'consent' });
+  tokenClient.requestAccessToken({ prompt: '' });
 }
 
 function handleLogout() {
   if (accessToken) google.accounts.oauth2.revoke(accessToken);
   accessToken = null;
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(TOKEN_TS_KEY);
   selectedFiles = {};
   folderStack = [];
   showScreen('screen-login');
