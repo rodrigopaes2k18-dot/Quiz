@@ -1,2 +1,2 @@
-# Quiz
+# Quizz
 App Quizz
