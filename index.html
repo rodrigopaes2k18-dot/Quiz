@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Quiz App</title>
+<title>QUIZZ</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -763,7 +763,7 @@
 <!-- ═══════════════ SCREEN: LOGIN ═══════════════ -->
 <div id="screen-login" class="screen active">
   <div class="login-card">
-    <div class="app-logo">QUIZ</div>
+    <div class="app-logo">QUIZZ</div>
     <div class="app-tagline">Central de Estudos · SRS Inteligente</div>
     <button class="btn-google" onclick="handleLogin()">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -783,7 +783,7 @@
     <button class="btn-icon" id="btn-back-browser" onclick="navigateUp()" style="display:none">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
-    <span class="topbar-title">QUIZ</span>
+    <span class="topbar-title">QUIZZ</span>
     <button class="btn-icon" onclick="showStats()" title="Estatísticas">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
     </button>
@@ -1642,7 +1642,7 @@ function finishSession() {
 const HISTORICO_FILENAME = 'quiz_historico.json';
 let historicoFileId = null;
 let historicoData = {};
-let metaDiaria = 50;
+let metaDiaria = parseInt(localStorage.getItem('quiz_meta_diaria') || '50');
 let sortAreaMode = 'menor';
 let statsQuestoes = []; // questões carregadas para a tela de stats
 
@@ -1847,6 +1847,7 @@ function confirmarMeta() {
   const val = parseInt(input.value);
   if (!val || val < 1) return;
   metaDiaria = val;
+  localStorage.setItem('quiz_meta_diaria', val);
   // Atualiza display
   document.getElementById('meta-edit').style.display = 'none';
   const disp = document.getElementById('meta-display');
