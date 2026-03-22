@@ -880,35 +880,6 @@
   </div>
 </div>
 
-<!-- ═══════════════ SCREEN: STATS ═══════════════ -->
-<div id="screen-stats" class="screen">
-  <div class="topbar">
-    <button class="btn-icon" onclick="showScreen('screen-browser')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    </button>
-    <span class="topbar-title">Estatísticas</span>
-  </div>
-  <div id="stats-content" style="padding:0 0 40px 0; overflow-y:auto;">
-    <div class="loading"><div class="spinner"></div>Calculando...</div>
-  </div>
-</div>
-
-<!-- ═══════════════ MODAL: ERRO DE CONEXÃO ═══════════════ -->
-<div class="modal-overlay hidden" id="modal-offline">
-  <div class="modal-box">
-    <div class="modal-icon">📡</div>
-    <div class="modal-title">Sem conexão com o Drive</div>
-    <div class="modal-body">
-      Não foi possível salvar seu progresso.<br><br>
-      Você pode <b>continuar estudando</b> sem salvar, ou <b>voltar ao menu</b> e tentar novamente quando tiver internet.
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-primary" onclick="continuarSemSalvar()">Continuar sem salvar</button>
-      <button class="btn btn-secondary" onclick="voltarAoMenu()">Voltar ao menu</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1039,8 +1010,8 @@ async function driveGet(url) {
   const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (r.status === 401) {
     handleLogout();
-    alert("Sua sessão expirou por tempo de inatividade. Por favor, faça login novamente.");
-    throw new Error("Sessão expirada");
+    showToast('⚠️ Sessão expirada. Faça login novamente.');
+    throw new Error('Sessão expirada');
   }
   if (!r.ok) throw new Error(`Drive API error: ${r.status}`);
   return r.json();
@@ -1055,8 +1026,8 @@ async function driveUpdate(fileId, content) {
   });
   if (r.status === 401) {
     handleLogout();
-    alert("Sua sessão expirou por tempo de inatividade. Por favor, faça login novamente.");
-    throw new Error("Sessão expirada");
+    showToast('⚠️ Sessão expirada. Faça login novamente.');
+    throw new Error('Sessão expirada');
   }
   if (!r.ok) throw new Error(`Drive update error: ${r.status}`);
 }
@@ -1076,9 +1047,9 @@ async function readJsonFile(fileId) {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (r.status === 401) {
-      handleLogout();
-      alert("Sua sessão expirou. Por favor, faça login novamente.");
-      throw new Error("Sessão expirada");
+    handleLogout();
+    showToast('⚠️ Sessão expirada. Faça login novamente.');
+    throw new Error('Sessão expirada');
   }
   if (!r.ok) throw new Error(`File read error: ${r.status}`);
   return r.json();
@@ -1095,6 +1066,7 @@ async function loadFolder(folderId, folderName) {
     if (folderId === null) {
       folderStack = [{ id: null, name: 'Meu Drive' }];
     } else {
+      // check if already in stack (navigating back via breadcrumb)
       const idx = folderStack.findIndex(f => f.id === folderId);
       if (idx >= 0) {
         folderStack = folderStack.slice(0, idx + 1);
@@ -1167,6 +1139,7 @@ function renderFileList(files, currentFolderId) {
     html += '<div class="file-list">';
     if (folders.length > 0) html += '<p style="font-size:0.72rem;color:var(--text2);padding:8px 0 4px;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-left:0">Arquivos JSON</p>';
 
+    // Select all button
     html += `<div style="display:flex;gap:8px;padding:4px 0 8px;">
       <button class="btn btn-secondary" style="font-size:0.78rem;padding:6px 14px" onclick="selectAllInFolder(${JSON.stringify(jsons).replace(/"/g, '&quot;')}, '${currentFolderId}')">Selecionar todos</button>
       <button class="btn btn-secondary" style="font-size:0.78rem;padding:6px 14px" onclick="deselectAllInFolder(${JSON.stringify(jsons.map(f=>f.id)).replace(/"/g, '&quot;')})">Desmarcar todos</button>
@@ -1200,7 +1173,7 @@ function toggleFile(fileId, fileName, folderId) {
   } else {
     selectedFiles[fileId] = { id: fileId, name: fileName, folderId };
   }
-  cacheValid = false;
+  cacheValid = false; // seleção mudou → cache inválido
   const chk = document.getElementById(`check-${fileId}`);
   if (chk) chk.className = `file-check ${selectedFiles[fileId] ? 'checked' : ''}`;
   updateSelectedCount();
@@ -1240,6 +1213,7 @@ async function showFilters() {
   const statsEl = document.getElementById('stats-preview');
   statsEl.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando questões...</div>';
 
+  // Carrega arquivos em paralelo, usando cache se disponível
   if (!cacheValid) {
     allLoadedQuestions = [];
     const fileIds = Object.keys(selectedFiles);
@@ -1253,7 +1227,7 @@ async function showFilters() {
           return data;
         }
       } catch (e) {
-        showToast(`⚠️ Erro ao ler ${selectedFiles[fid]?.name || 'arquivo'}`);
+        showToast(`⚠️ Erro ao ler ${selectedFiles[fid].name}`);
       }
       return [];
     }));
@@ -1262,6 +1236,7 @@ async function showFilters() {
     cacheValid = true;
   }
 
+  // Populate filters
   const unique = (arr) => [...new Set(arr.filter(Boolean))].sort();
 
   const areas = unique(allLoadedQuestions.map(q => q.grande_area));
@@ -1374,6 +1349,7 @@ function buildQueue(questions) {
   const paraHojeOrdenadas  = sortAndShuffleByDate(paraHoje);
   const revisoes           = [...erradas, ...atrasadasOrdenadas, ...paraHojeOrdenadas];
 
+  // Verifica quantas revisões já foram feitas hoje
   const hojeData      = historicoData[hoje] || {};
   const metaFeitaHoje = hojeData.meta || 0;
   const metaRevBatida = metaFeitaHoje >= metaDiaria;
@@ -1382,9 +1358,12 @@ function buildQueue(questions) {
   const novasRestantes = novas.slice(metaNovas);
 
   if (metaRevBatida) {
+    // Meta de revisões batida: novas na frente, revisões restantes no final
     return [...novasParaHoje, ...revisoes, ...novasRestantes];
   } else {
-    const faltam = Math.max(0, metaDiaria - metaFeitaHoje);
+    // Meta não batida: revisões até bater a meta, novas injetadas logo após,
+    // revisões restantes no final
+    const faltam              = Math.max(0, metaDiaria - metaFeitaHoje);
     const revisoesPrioritarias = revisoes.slice(0, faltam);
     const revisoesRestantes    = revisoes.slice(faltam);
     return [...revisoesPrioritarias, ...novasParaHoje, ...revisoesRestantes, ...novasRestantes];
@@ -1412,9 +1391,11 @@ function startQuiz() {
   renderQuestion();
 }
 
+// Cache de imagens: nome_do_arquivo → url blob
 const imageCache = {};
 
 async function searchImageOnDrive(filename) {
+  // Busca o arquivo pelo nome em todo o Drive
   const q = `name='${filename}' and trashed=false and mimeType contains 'image/'`;
   const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=5`;
   const data = await driveGet(url);
@@ -1423,6 +1404,7 @@ async function searchImageOnDrive(filename) {
 }
 
 async function loadImageAsBlob(fileId) {
+  // Baixa a imagem e converte para URL local (blob)
   const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
@@ -1439,6 +1421,7 @@ async function renderQuestion() {
   const streak = q.streak || 0;
   const data = q.proxima_revisao;
 
+  // HUD
   const s = calcStats(sessionQuestions);
   document.getElementById('hud').innerHTML = `
     <span class="hud-chip erradas">🔙 ${s.erradas}</span>
@@ -1446,11 +1429,13 @@ async function renderQuestion() {
     <span class="hud-chip hoje">⚠️ ${s.hoje}</span>
     <span class="hud-chip futuras">📅 ${s.futuras}</span>`;
 
+  // Progress
   const pct = Math.round((currentIndex / quizQueue.length) * 100);
   document.getElementById('progress-text').textContent = `${currentIndex+1}/${quizQueue.length}`;
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('score-text').textContent = `${sessionCorrect}✓`;
 
+  // Atualiza barra da meta de revisões
   const _metaFeitas = (historicoData[isoToday()] && historicoData[isoToday()].meta) || 0;
   const _metaPct = Math.min(100, Math.round((_metaFeitas / metaDiaria) * 100));
   const _metaEl = document.getElementById('meta-progress-fill');
@@ -1469,17 +1454,20 @@ async function renderQuestion() {
     }
   }
 
+  // Badge
   let badgeClass = 'nova', badgeText = '🌱 Nova';
   if (data) {
     if (streak === 0) { badgeClass = 'erro'; badgeText = `🔙 Erro recente · 🔥${streak}`; }
     else { badgeClass = 'revisao'; badgeText = `📅 Revisão ${data} · 🔥${streak}`; }
   }
 
+  // Options
   const ops = shuffle([...q.opcoes]);
   const optsHtml = ops.map(op => `
     <button class="option-btn" onclick="checkAnswer(this, '${escStr(op)}')">${escHtml(op)}</button>
   `).join('');
 
+  // Monta o HTML inicial sem imagens ainda
   document.getElementById('quiz-body').innerHTML = `
     <span class="streak-badge ${badgeClass}">${badgeText}</span>
     <div class="question-text">${q.pergunta.replace(/\n/g,'<br>')}</div>
@@ -1491,16 +1479,17 @@ async function renderQuestion() {
     <button class="btn btn-danger" style="flex:1" onclick="finishSession()">Encerrar</button>
     <button class="btn btn-primary" style="flex:2;display:none" id="btn-next" onclick="nextQuestion()">Próxima →</button>`;
 
+  // Carrega imagens se existirem
   const imagens = q.imagens || [];
   if (imagens.length > 0) {
     const container = document.getElementById('image-container');
     container.innerHTML = '<div class="loading" style="padding:16px"><div class="spinner"></div>Carregando imagem...</div>';
-    
-    // Wrapper para não sobrescrever imagens no loop
+
     const imgWrapper = document.createElement('div');
 
     for (const caminho of imagens) {
       const nomeArquivo = caminho.split('/').pop();
+
       try {
         if (!imageCache[nomeArquivo]) {
           const fileId = await searchImageOnDrive(nomeArquivo);
@@ -1515,10 +1504,16 @@ async function renderQuestion() {
           img.style.cssText = 'max-width:100%;border-radius:8px;margin:12px 0;display:block;';
           imgWrapper.appendChild(img);
         } else {
-          imgWrapper.innerHTML += `<div style="color:var(--text2);font-size:0.8rem;padding:8px">⚠️ Imagem não encontrada: ${escHtml(nomeArquivo)}</div>`;
+          const warn = document.createElement('div');
+          warn.style.cssText = 'color:var(--text2);font-size:0.8rem;padding:8px';
+          warn.textContent = '⚠️ Imagem não encontrada: ' + nomeArquivo;
+          imgWrapper.appendChild(warn);
         }
       } catch(e) {
-        imgWrapper.innerHTML += `<div style="color:var(--red);font-size:0.8rem;padding:8px">❌ Erro ao carregar imagem</div>`;
+        const err = document.createElement('div');
+        err.style.cssText = 'color:var(--red);font-size:0.8rem;padding:8px';
+        err.textContent = '❌ Erro ao carregar imagem';
+        imgWrapper.appendChild(err);
       }
     }
     container.innerHTML = '';
@@ -1535,6 +1530,7 @@ async function checkAnswer(btn, resposta) {
   const acertou = resposta === q.resposta_correta;
   sessionTotal++;
 
+  // Disable all
   document.querySelectorAll('.option-btn').forEach(b => {
     b.disabled = true;
     if (b.textContent.trim() === q.resposta_correta) b.classList.add('correct');
@@ -1545,13 +1541,15 @@ async function checkAnswer(btn, resposta) {
   if (acertou) sessionCorrect++;
   else sessionErrors.push(q);
 
+  // SRS update
   const hoje = getBrazilDate();
   const hojeIso = hoje.toISOString().split('T')[0];
   let msgRev = '';
 
   if (srsMode) {
+    // Guarda estado original ANTES de atualizar — para classificar corretamente
     const eraErradaAnterior = (q.streak === 0) && !!q.proxima_revisao;
-    const eraNova = !q.proxima_revisao; 
+    const eraNova           = !q.proxima_revisao; // sem data = nunca foi respondida
 
     if (acertou) {
       const streak = (q.streak || 0) + 1;
@@ -1568,11 +1566,13 @@ async function checkAnswer(btn, resposta) {
     q.acertou_ultima_vez = acertou;
     q.data_resposta = hoje.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
-    // Chamada explícita e corrigida
+    // Registra no histórico do dia (passa flag do estado original)
     registrarNoHistorico(acertou, eraErradaAnterior, eraNova);
+    // Save async
     saveProgress(q);
   }
 
+  // Feedback
   const explicacaoOpcao = (q.explicacoes_opcoes && q.explicacoes_opcoes[resposta]) ? q.explicacoes_opcoes[resposta] : '';
   const explicacaoGeral = q.explicacao || '';
   let explicacaoHtml = '';
@@ -1596,14 +1596,17 @@ function nextQuestion() {
   renderQuestion();
 }
 
+// Controla se o modal de erro de conexão já foi exibido nesta sessão
 let erroConexaoExibido = false;
 
 function continuarSemSalvar() {
+  // Usuário escolheu continuar — não mostra o modal de novo nesta sessão
   erroConexaoExibido = true;
   document.getElementById('modal-offline').classList.add('hidden');
 }
 
 function voltarAoMenu() {
+  // Usuário escolheu voltar — reseta tudo e vai para o browser
   document.getElementById('modal-offline').classList.add('hidden');
   erroConexaoExibido = false;
   showScreen('screen-browser');
@@ -1616,6 +1619,7 @@ async function saveProgress(q) {
     const fileId = q._fileId;
     if (!fileId) return;
 
+    // Atualiza no cache em memória
     if (jsonCache[fileId]) {
       const idx = jsonCache[fileId].findIndex(x => x.id === q.id);
       if (idx >= 0) {
@@ -1625,6 +1629,8 @@ async function saveProgress(q) {
         jsonCache[fileId][idx].proxima_revisao = q.proxima_revisao;
         jsonCache[fileId][idx].data_resposta = q.data_resposta;
       }
+      // Salva o arquivo inteiro já atualizado — sem precisar reler do Drive
+      // Remove campos internos antes de salvar no Drive
       const dadosParaSalvar = jsonCache[fileId].map(function(q) {
         const copia = Object.assign({}, q);
         delete copia._fileId;
@@ -1633,6 +1639,7 @@ async function saveProgress(q) {
       });
       await driveUpdate(fileId, dadosParaSalvar);
     } else {
+      // Fallback: sem cache, relê do Drive (comportamento antigo)
       const data = await readJsonFile(fileId);
       const idx = data.findIndex(x => x.id === q.id);
       if (idx >= 0) {
@@ -1646,7 +1653,7 @@ async function saveProgress(q) {
     }
   } catch (e) {
     console.error('Save error:', e);
-    if (!erroConexaoExibido && e.message !== "Sessão expirada") {
+    if (!erroConexaoExibido) {
       document.getElementById('modal-offline').classList.remove('hidden');
     }
   }
@@ -1656,7 +1663,7 @@ async function saveProgress(q) {
 // RESULTS
 // ═══════════════════════════════════════════════════════
 function finishSession() {
-  salvarHistorico(); 
+  salvarHistorico(); // Salva histórico ao finalizar sessão
   showScreen('screen-results');
   const pct = sessionTotal > 0 ? Math.round((sessionCorrect/sessionTotal)*100) : 0;
   document.getElementById('results-score').textContent = pct + '%';
@@ -1681,6 +1688,9 @@ function finishSession() {
 }
 
 // ═══════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════
 // HISTÓRICO E ESTATÍSTICAS
 // ═══════════════════════════════════════════════════════
 
@@ -1690,7 +1700,7 @@ let historicoData = {};
 let metaDiaria  = parseInt(localStorage.getItem('quiz_meta_diaria')  || '50');
 let metaNovas   = parseInt(localStorage.getItem('quiz_meta_novas')   || '20');
 let sortAreaMode = 'menor';
-let statsQuestoes = []; 
+let statsQuestoes = []; // questões carregadas para a tela de stats
 
 async function carregarHistorico() {
   try {
@@ -1739,7 +1749,6 @@ async function salvarHistorico() {
   }
 }
 
-// Assinatura de função corrigida para remover a necessidade de "arguments[2]"
 function registrarNoHistorico(acertou, eraErradaAnterior, eraNova) {
   const hoje = isoToday();
   if (!historicoData[hoje]) {
@@ -1749,12 +1758,16 @@ function registrarNoHistorico(acertou, eraErradaAnterior, eraNova) {
   if (acertou) historicoData[hoje].acertos++;
   else historicoData[hoje].erros++;
 
+  // Conta para a meta de revisões apenas acertos de novas e revisões
   if (!eraErradaAnterior && acertou) {
     if (!historicoData[hoje].meta) historicoData[hoje].meta = 0;
     historicoData[hoje].meta++;
   }
 
-  if (eraNova === true) {
+  // Conta para a meta de novas apenas questões que eram novas (sem proxima_revisao antes)
+  // eraErradaAnterior=false E era nova = sem proxima_revisao no momento da resposta
+  // Usamos a flag eraNova passada pelo checkAnswer
+  if (arguments[2] === true) {
     if (!historicoData[hoje].novas) historicoData[hoje].novas = 0;
     historicoData[hoje].novas++;
   }
@@ -1776,6 +1789,7 @@ async function showStats() {
     return;
   }
 
+  // Usa cache se disponível, senão carrega do Drive
   let todasQuestoes = [];
   if (cacheValid && allLoadedQuestions.length > 0) {
     todasQuestoes = allLoadedQuestions;
@@ -1805,25 +1819,32 @@ function renderStats(questoes) {
   const hoje = isoToday();
   const el = document.getElementById('stats-content');
 
+  // Globais
   const respondidas = questoes.filter(function(q) { return q.respondida; });
   const totalRespondidas = respondidas.length;
   const totalAcertos = respondidas.filter(function(q) { return q.acertou_ultima_vez; }).length;
   const totalErros = totalRespondidas - totalAcertos;
   const pctGlobal = totalRespondidas > 0 ? Math.round((totalAcertos / totalRespondidas) * 100) : 0;
 
+  // Hoje
   const hojeData = historicoData[hoje] || { respondidas: 0, acertos: 0, erros: 0 };
   const aprovHoje = hojeData.respondidas > 0 ? Math.round((hojeData.acertos / hojeData.respondidas) * 100) : 0;
-  
+  // Meta de revisões
   const metaPct   = Math.min(100, Math.round(((hojeData.meta || 0) / metaDiaria) * 100));
   const metaColor = metaPct >= 100 ? 'var(--green)' : metaPct >= 60 ? 'var(--accent)' : 'var(--orange)';
-  
+  // Meta de novas
   const novasFeitas = hojeData.novas || 0;
   const metaNovasPct   = Math.min(100, Math.round((novasFeitas / metaNovas) * 100));
   const metaNovasColor = metaNovasPct >= 100 ? 'var(--green)' : metaNovasPct >= 60 ? 'var(--accent)' : 'var(--orange)';
   const metaRevBatida  = (hojeData.meta || 0) >= metaDiaria;
 
+  // Streak
   const streakDias = calcularStreakDias();
+
+  // Gráfico
   const graficoHtml = renderGrafico14Dias();
+
+  // Áreas
   const areasHtml = renderAreas(questoes);
 
   el.innerHTML =
@@ -1915,12 +1936,13 @@ function confirmarMeta() {
   if (!val || val < 1) return;
   metaDiaria = val;
   localStorage.setItem('quiz_meta_diaria', val);
-  
+  // Atualiza display
   document.getElementById('meta-edit').style.display = 'none';
   const disp = document.getElementById('meta-display');
   disp.style.display = 'flex';
+  // Atualiza texto do valor
   disp.querySelector('span:nth-child(2)').textContent = metaDiaria + ' questões';
-  
+  // Recalcula barra
   const hojeData = historicoData[isoToday()] || { respondidas: 0, acertos: 0, erros: 0 };
   const metaPct = Math.min(100, Math.round(((hojeData.meta || 0) / metaDiaria) * 100));
   const metaColor = metaPct >= 100 ? 'var(--green)' : metaPct >= 60 ? 'var(--accent)' : 'var(--orange)';
@@ -1949,7 +1971,7 @@ function confirmarMetaNovas() {
   document.getElementById('meta-novas-edit').style.display = 'none';
   document.getElementById('meta-novas-display').style.display = 'flex';
   document.querySelector('#meta-novas-display span:nth-child(2)').textContent = metaNovas;
-  
+  // Recalcula barra de novas
   const hojeData = historicoData[isoToday()] || {};
   const novasFeitas = hojeData.novas || 0;
   const metaRevBatida = (hojeData.meta || 0) >= metaDiaria;
@@ -1963,24 +1985,24 @@ function confirmarMetaNovas() {
   if (cnt) { cnt.textContent = metaRevBatida ? novasFeitas + ' / ' + metaNovas : '🔒 Liberada ao bater revisões'; cnt.style.color = metaRevBatida ? cor : 'var(--text2)'; }
 }
 
-// BUG DA DECLARAÇÃO CORRIGIDO:
 function calcularStreakDias() {
   const hoje = isoToday();
   let streak = 0;
   let d = getBrazilDate();
-  
-  // Começamos conferindo de ontem para trás
-  d.setDate(d.getDate() - 1);
+  d.setDate(d.getDate() - 1); // começa em ontem
 
   while (true) {
-    const iso = d.toISOString().split('T')[0];
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const iso = y + '-' + m + '-' + day;
     if (historicoData[iso] && (historicoData[iso].meta || 0) >= metaDiaria) {
       streak++;
       d.setDate(d.getDate() - 1);
     } else { break; }
   }
 
-  // Depois conferimos o dia de hoje
+  // Hoje: só adiciona se já bateu a meta hoje
   const hojeData = historicoData[hoje];
   if (hojeData && (hojeData.meta || 0) >= metaDiaria) streak++;
 
@@ -2025,6 +2047,7 @@ function renderAreas(questoes) {
     }
   });
 
+  // Separa áreas respondidas (total > 0) das não respondidas
   var areaRespondidas = [];
   var areaNaoRespondidas = [];
   Object.keys(areas).forEach(function(area) {
@@ -2037,6 +2060,7 @@ function renderAreas(questoes) {
     else areaNaoRespondidas.push(entry);
   });
 
+  // Ordena apenas as respondidas conforme o modo
   if (sortAreaMode === 'menor') areaRespondidas.sort(function(a, b) { return a.pct - b.pct; });
   else if (sortAreaMode === 'maior') areaRespondidas.sort(function(a, b) { return b.pct - a.pct; });
   else areaRespondidas.sort(function(a, b) { return a.area.localeCompare(b.area); });
@@ -2082,6 +2106,7 @@ function renderAreas(questoes) {
 
   var html = areaRespondidas.map(function(a, i) { return renderAreaItem(a, i); }).join('');
 
+  // Seção N/R colapsável no final, se houver
   if (areaNaoRespondidas.length > 0) {
     html += '<div style="margin-top:8px">' +
       '<div onclick="toggleArea(\'areas-nr\')" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border)">' +
@@ -2116,6 +2141,35 @@ function setSortArea(mode) {
 
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- ═══════════════ SCREEN: STATS ═══════════════ -->
+<div id="screen-stats" class="screen">
+  <div class="topbar">
+    <button class="btn-icon" onclick="showScreen('screen-browser')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <span class="topbar-title">Estatísticas</span>
+  </div>
+  <div id="stats-content" style="padding:0 0 40px 0; overflow-y:auto;">
+    <div class="loading"><div class="spinner"></div>Calculando...</div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: ERRO DE CONEXÃO ═══════════════ -->
+<div class="modal-overlay hidden" id="modal-offline">
+  <div class="modal-box">
+    <div class="modal-icon">📡</div>
+    <div class="modal-title">Sem conexão com o Drive</div>
+    <div class="modal-body">
+      Não foi possível salvar seu progresso.<br><br>
+      Você pode <b>continuar estudando</b> sem salvar, ou <b>voltar ao menu</b> e tentar novamente quando tiver internet.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="continuarSemSalvar()">Continuar sem salvar</button>
+      <button class="btn btn-secondary" onclick="voltarAoMenu()">Voltar ao menu</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
