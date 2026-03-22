@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Quiz App</title>
+<title>QUIZZ</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -276,6 +276,28 @@
     border-radius: 2px;
     overflow: hidden;
   }
+  .meta-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.7rem;
+    color: var(--text2);
+    padding-top: 4px;
+  }
+  .meta-progress-bar {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .meta-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--accent));
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
   .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--accent), var(--accent2));
@@ -738,10 +760,10 @@
 </head>
 <body>
 
-<!-- ═══════════════ SCREEN: LOGIN ═══════════════ -->
+<!-- ═══════════════ SCREENS (DOM CARREGADO ANTES DO SCRIPT) ═══════════════ -->
 <div id="screen-login" class="screen active">
   <div class="login-card">
-    <div class="app-logo">QUIZ</div>
+    <div class="app-logo">QUIZZ</div>
     <div class="app-tagline">Central de Estudos · SRS Inteligente</div>
     <button class="btn-google" onclick="handleLogin()">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -755,13 +777,12 @@
   </div>
 </div>
 
-<!-- ═══════════════ SCREEN: BROWSER ═══════════════ -->
 <div id="screen-browser" class="screen">
   <div class="topbar">
     <button class="btn-icon" id="btn-back-browser" onclick="navigateUp()" style="display:none">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
-    <span class="topbar-title">QUIZ</span>
+    <span class="topbar-title">QUIZZ</span>
     <button class="btn-icon" onclick="showStats()" title="Estatísticas">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
     </button>
@@ -769,20 +790,16 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
     </button>
   </div>
-
   <div class="breadcrumb" id="breadcrumb"></div>
-
   <div id="file-list-container">
     <div class="loading"><div class="spinner"></div>Carregando...</div>
   </div>
-
   <div class="bottom-bar">
     <span class="selected-count" id="selected-count">Nenhum arquivo selecionado</span>
     <button class="btn btn-primary" id="btn-start-session" onclick="showFilters()" disabled>Estudar</button>
   </div>
 </div>
 
-<!-- ═══════════════ SCREEN: FILTERS ═══════════════ -->
 <div id="screen-filters" class="screen">
   <div class="topbar">
     <button class="btn-icon" onclick="showScreen('screen-browser')">
@@ -790,7 +807,6 @@
     </button>
     <span class="topbar-title">Configurar Sessão</span>
   </div>
-
   <div style="padding: 16px 16px 100px; overflow-y: auto;">
     <h3 class="section-title">Filtros</h3>
     <div class="filter-row">
@@ -807,24 +823,20 @@
       </select>
       <input type="text" id="filter-tags" placeholder="Filtrar por tags...">
     </div>
-
     <h3 class="section-title">Modo de Estudo</h3>
     <label class="toggle-srs">
       <input type="checkbox" id="toggle-srs" checked>
       <div class="toggle-track"></div>
       🧠 Modo Memória (SRS Inteligente)
     </label>
-
     <div id="stats-preview" style="margin-top: 24px;"></div>
   </div>
-
   <div class="bottom-bar">
     <button class="btn btn-secondary" onclick="showScreen('screen-browser')" style="flex:1">Cancelar</button>
     <button class="btn btn-primary" onclick="startQuiz()" style="flex:2">Iniciar Sessão</button>
   </div>
 </div>
 
-<!-- ═══════════════ SCREEN: QUIZ ═══════════════ -->
 <div id="screen-quiz" class="screen">
   <div class="quiz-header">
     <div class="hud" id="hud"></div>
@@ -833,14 +845,15 @@
       <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
       <span id="score-text">0✓</span>
     </div>
+    <div class="meta-progress-row">
+      <span id="meta-progress-text">Meta: 0/50</span>
+      <div class="meta-progress-bar"><div class="meta-progress-fill" id="meta-progress-fill" style="width:0%"></div></div>
+    </div>
   </div>
-
   <div class="quiz-body" id="quiz-body"></div>
-
   <div class="quiz-actions" id="quiz-actions"></div>
 </div>
 
-<!-- ═══════════════ SCREEN: RESULTS ═══════════════ -->
 <div id="screen-results" class="screen">
   <div class="results-header">
     <div style="font-size:2rem; margin-bottom:8px">🏁</div>
@@ -854,38 +867,108 @@
   </div>
 </div>
 
+<div id="screen-stats" class="screen">
+  <div class="topbar">
+    <button class="btn-icon" onclick="showScreen('screen-browser')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <span class="topbar-title">Estatísticas</span>
+  </div>
+  <div id="stats-content" style="padding:0 0 40px 0; overflow-y:auto;">
+    <div class="loading"><div class="spinner"></div>Calculando...</div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modal-offline">
+  <div class="modal-box">
+    <div class="modal-icon">📡</div>
+    <div class="modal-title">Sem conexão com o Drive</div>
+    <div class="modal-body">
+      Não foi possível salvar seu progresso.<br><br>
+      Você pode <b>continuar estudando</b> sem salvar, ou <b>voltar ao menu</b> e tentar novamente quando tiver internet.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="continuarSemSalvar()">Continuar sem salvar</button>
+      <button class="btn btn-secondary" onclick="voltarAoMenu()">Voltar ao menu</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
 <script>
-// ═══════════════════════════════════════════════════════
-// CONFIGURAÇÃO — substitua pelo seu Client ID
-// ═══════════════════════════════════════════════════════
+// CONFIGURAÇÃO
 const CLIENT_ID = '345044710042-armqofhvfj88b7gpaf5e0j4phvb6j7fb.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/drive';
+const TOKEN_KEY = 'quiz_access_token';
+const TOKEN_TS_KEY = 'quiz_token_ts';
+const TOKEN_TTL = 55 * 60 * 1000; 
 
-// ═══════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════
+// Inicialização
+window.addEventListener('load', function() {
+  const saved = localStorage.getItem(TOKEN_KEY);
+  const ts = parseInt(localStorage.getItem(TOKEN_TS_KEY) || '0');
+  if (saved && (Date.now() - ts) < TOKEN_TTL) {
+    accessToken = saved;
+    showScreen('screen-browser');
+    loadFolder(null, 'Meu Drive');
+    carregarHistorico();
+  }
+});
+
+// ESTADO
 let tokenClient = null;
 let accessToken = null;
-
-// Browser state
-let folderStack = []; // [{id, name}]
-let selectedFiles = {}; // {fileId: {id, name, parentId}}
+let folderStack = [];
+let selectedFiles = {};
 let allLoadedQuestions = [];
-
-// Quiz state
+let jsonCache = {};
+let cacheValid = false;
 let quizQueue = [];
 let currentIndex = 0;
 let sessionCorrect = 0;
 let sessionTotal = 0;
 let sessionErrors = [];
 let srsMode = true;
-let sessionQuestions = []; // full filtered list for HUD
+let sessionQuestions = [];
+let erroConexaoExibido = false;
+
+const HISTORICO_FILENAME = 'quiz_historico.json';
+let historicoFileId = null;
+let historicoData = {};
+let metaDiaria  = parseInt(localStorage.getItem('quiz_meta_diaria')  || '50');
+let metaNovas   = parseInt(localStorage.getItem('quiz_meta_novas')   || '20');
+let sortAreaMode = 'menor';
+let statsQuestoes = []; 
+const imageCache = {};
 
 // ═══════════════════════════════════════════════════════
-// UTILS
+// UTILS DE DATA (BLINDADOS CONTRA FUSO HORÁRIO)
 // ═══════════════════════════════════════════════════════
+function toLocalISOString(dateObj) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getBrazilDate() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+}
+
+function isoToday() {
+  return toLocalISOString(getBrazilDate());
+}
+
+function addDays(isoDate, days) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + days);
+  return toLocalISOString(date);
+}
+
+// UTILS GERAIS
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -899,27 +982,20 @@ function showToast(msg, dur = 2500) {
   setTimeout(() => t.classList.remove('show'), dur);
 }
 
-function getBrazilDate() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-}
-
-function isoToday() {
-  const d = getBrazilDate();
-  return d.toISOString().split('T')[0];
-}
-
-function addDays(isoDate, days) {
-  const d = new Date(isoDate + 'T12:00:00Z');
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
-}
-
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escStr(s) {
+  return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,' ');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -937,28 +1013,36 @@ function handleLogin() {
     callback: (resp) => {
       if (resp.error) { showToast('❌ Erro no login'); return; }
       accessToken = resp.access_token;
+      localStorage.setItem(TOKEN_KEY, accessToken);
+      localStorage.setItem(TOKEN_TS_KEY, Date.now().toString());
       showScreen('screen-browser');
       loadFolder(null, 'Meu Drive');
-      carregarHistorico(); // Carrega histórico em background
-      carregarHistorico(); // Pré-carrega histórico em background
+      carregarHistorico();
     }
   });
-  tokenClient.requestAccessToken({ prompt: 'consent' });
+  tokenClient.requestAccessToken({ prompt: '' });
 }
 
 function handleLogout() {
   if (accessToken) google.accounts.oauth2.revoke(accessToken);
   accessToken = null;
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(TOKEN_TS_KEY);
   selectedFiles = {};
   folderStack = [];
   showScreen('screen-login');
 }
 
 // ═══════════════════════════════════════════════════════
-// DRIVE API
+// DRIVE API COM INTERCEPTADORES 401
 // ═══════════════════════════════════════════════════════
 async function driveGet(url) {
   const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (r.status === 401) {
+    handleLogout();
+    alert("Sua sessão expirou por tempo de inatividade. Por favor, faça login novamente.");
+    throw new Error("Sessão expirada");
+  }
   if (!r.ok) throw new Error(`Drive API error: ${r.status}`);
   return r.json();
 }
@@ -970,6 +1054,11 @@ async function driveUpdate(fileId, content) {
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: blob
   });
+  if (r.status === 401) {
+    handleLogout();
+    alert("Sua sessão expirou por tempo de inatividade. Por favor, faça login novamente.");
+    throw new Error("Sessão expirada");
+  }
   if (!r.ok) throw new Error(`Drive update error: ${r.status}`);
 }
 
@@ -987,12 +1076,17 @@ async function readJsonFile(fileId) {
   const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
+  if (r.status === 401) {
+      handleLogout();
+      alert("Sua sessão expirou. Por favor, faça login novamente.");
+      throw new Error("Sessão expirada");
+  }
   if (!r.ok) throw new Error(`File read error: ${r.status}`);
   return r.json();
 }
 
 // ═══════════════════════════════════════════════════════
-// BROWSER
+// BROWSER E GERENCIADOR DE ARQUIVOS
 // ═══════════════════════════════════════════════════════
 async function loadFolder(folderId, folderName) {
   const container = document.getElementById('file-list-container');
@@ -1002,7 +1096,6 @@ async function loadFolder(folderId, folderName) {
     if (folderId === null) {
       folderStack = [{ id: null, name: 'Meu Drive' }];
     } else {
-      // check if already in stack (navigating back via breadcrumb)
       const idx = folderStack.findIndex(f => f.id === folderId);
       if (idx >= 0) {
         folderStack = folderStack.slice(0, idx + 1);
@@ -1044,7 +1137,6 @@ function navigateUp() {
 
 function renderFileList(files, currentFolderId) {
   const container = document.getElementById('file-list-container');
-
   const folders = files.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
   const jsons = files.filter(f => f.name.endsWith('.json'));
 
@@ -1074,13 +1166,10 @@ function renderFileList(files, currentFolderId) {
   if (jsons.length > 0) {
     html += '<div class="file-list">';
     if (folders.length > 0) html += '<p style="font-size:0.72rem;color:var(--text2);padding:8px 0 4px;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-left:0">Arquivos JSON</p>';
-
-    // Select all button
     html += `<div style="display:flex;gap:8px;padding:4px 0 8px;">
       <button class="btn btn-secondary" style="font-size:0.78rem;padding:6px 14px" onclick="selectAllInFolder(${JSON.stringify(jsons).replace(/"/g, '&quot;')}, '${currentFolderId}')">Selecionar todos</button>
       <button class="btn btn-secondary" style="font-size:0.78rem;padding:6px 14px" onclick="deselectAllInFolder(${JSON.stringify(jsons.map(f=>f.id)).replace(/"/g, '&quot;')})">Desmarcar todos</button>
     </div>`;
-
     jsons.forEach(f => {
       const checked = selectedFiles[f.id] ? 'checked' : '';
       html += `
@@ -1099,16 +1188,13 @@ function renderFileList(files, currentFolderId) {
   updateSelectedCount();
 }
 
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 function toggleFile(fileId, fileName, folderId) {
   if (selectedFiles[fileId]) {
     delete selectedFiles[fileId];
   } else {
     selectedFiles[fileId] = { id: fileId, name: fileName, folderId };
   }
+  cacheValid = false;
   const chk = document.getElementById(`check-${fileId}`);
   if (chk) chk.className = `file-check ${selectedFiles[fileId] ? 'checked' : ''}`;
   updateSelectedCount();
@@ -1141,30 +1227,35 @@ function updateSelectedCount() {
 }
 
 // ═══════════════════════════════════════════════════════
-// FILTERS SCREEN
+// FILTROS E CONSTRUÇÃO DE QUEUE SRS
 // ═══════════════════════════════════════════════════════
 async function showFilters() {
   showScreen('screen-filters');
   const statsEl = document.getElementById('stats-preview');
   statsEl.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando questões...</div>';
 
-  // Load all selected files
-  allLoadedQuestions = [];
-  const fileIds = Object.keys(selectedFiles);
+  if (!cacheValid) {
+    allLoadedQuestions = [];
+    const fileIds = Object.keys(selectedFiles);
 
-  for (const fid of fileIds) {
-    try {
-      const data = await readJsonFile(fid);
-      if (Array.isArray(data)) {
-        data.forEach(q => { q._fileId = fid; q._fileName = selectedFiles[fid].name; });
-        allLoadedQuestions.push(...data);
+    const results = await Promise.all(fileIds.map(async (fid) => {
+      try {
+        const data = await readJsonFile(fid);
+        if (Array.isArray(data)) {
+          data.forEach(q => { q._fileId = fid; q._fileName = selectedFiles[fid].name; });
+          jsonCache[fid] = data;
+          return data;
+        }
+      } catch (e) {
+        showToast(`⚠️ Erro ao ler ${selectedFiles[fid]?.name || 'arquivo'}`);
       }
-    } catch (e) {
-      showToast(`⚠️ Erro ao ler ${selectedFiles[fid].name}`);
-    }
+      return [];
+    }));
+
+    results.forEach(data => allLoadedQuestions.push(...data));
+    cacheValid = true;
   }
 
-  // Populate filters
   const unique = (arr) => [...new Set(arr.filter(Boolean))].sort();
 
   const areas = unique(allLoadedQuestions.map(q => q.grande_area));
@@ -1243,12 +1334,10 @@ function renderStatsPreview(questions) {
     </div>`;
 }
 
-// ═══════════════════════════════════════════════════════
-// SRS LOGIC
-// ═══════════════════════════════════════════════════════
 function buildQueue(questions) {
   const hoje = isoToday();
   const erradas=[], novas=[], atrasadas=[], paraHoje=[];
+
   questions.forEach(q => {
     const data = q.proxima_revisao;
     const streak = q.streak || 0;
@@ -1259,28 +1348,42 @@ function buildQueue(questions) {
       else paraHoje.push(q);
     }
   });
+
   shuffle(erradas); shuffle(novas);
 
   function sortAndShuffleByDate(lista) {
-    // Agrupa as questões por data
     const grupos = {};
     lista.forEach(q => {
       const data = q.proxima_revisao;
       if (!grupos[data]) grupos[data] = [];
       grupos[data].push(q);
     });
-    // Ordena as datas (mais antiga primeiro) e embaralha dentro de cada grupo
     return Object.keys(grupos).sort().flatMap(data => shuffle(grupos[data]));
   }
 
   const atrasadasOrdenadas = sortAndShuffleByDate(atrasadas);
   const paraHojeOrdenadas  = sortAndShuffleByDate(paraHoje);
+  const revisoes           = [...erradas, ...atrasadasOrdenadas, ...paraHojeOrdenadas];
 
-  return [...erradas, ...novas, ...atrasadasOrdenadas, ...paraHojeOrdenadas];
+  const hojeData      = historicoData[hoje] || {};
+  const metaFeitaHoje = hojeData.meta || 0;
+  const metaRevBatida = metaFeitaHoje >= metaDiaria;
+
+  const novasParaHoje  = novas.slice(0, metaNovas);
+  const novasRestantes = novas.slice(metaNovas);
+
+  if (metaRevBatida) {
+    return [...novasParaHoje, ...revisoes, ...novasRestantes];
+  } else {
+    const faltam = Math.max(0, metaDiaria - metaFeitaHoje);
+    const revisoesPrioritarias = revisoes.slice(0, faltam);
+    const revisoesRestantes    = revisoes.slice(faltam);
+    return [...revisoesPrioritarias, ...novasParaHoje, ...revisoesRestantes, ...novasRestantes];
+  }
 }
 
 // ═══════════════════════════════════════════════════════
-// QUIZ
+// EXECUÇÃO DO QUIZ E LÓGICA DE JOGO
 // ═══════════════════════════════════════════════════════
 function startQuiz() {
   sessionQuestions = getFilteredQuestions();
@@ -1300,11 +1403,7 @@ function startQuiz() {
   renderQuestion();
 }
 
-// Cache de imagens: nome_do_arquivo → url blob
-const imageCache = {};
-
 async function searchImageOnDrive(filename) {
-  // Busca o arquivo pelo nome em todo o Drive
   const q = `name='${filename}' and trashed=false and mimeType contains 'image/'`;
   const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=5`;
   const data = await driveGet(url);
@@ -1313,7 +1412,6 @@ async function searchImageOnDrive(filename) {
 }
 
 async function loadImageAsBlob(fileId) {
-  // Baixa a imagem e converte para URL local (blob)
   const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
@@ -1330,7 +1428,6 @@ async function renderQuestion() {
   const streak = q.streak || 0;
   const data = q.proxima_revisao;
 
-  // HUD
   const s = calcStats(sessionQuestions);
   document.getElementById('hud').innerHTML = `
     <span class="hud-chip erradas">🔙 ${s.erradas}</span>
@@ -1338,26 +1435,40 @@ async function renderQuestion() {
     <span class="hud-chip hoje">⚠️ ${s.hoje}</span>
     <span class="hud-chip futuras">📅 ${s.futuras}</span>`;
 
-  // Progress
   const pct = Math.round((currentIndex / quizQueue.length) * 100);
   document.getElementById('progress-text').textContent = `${currentIndex+1}/${quizQueue.length}`;
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('score-text').textContent = `${sessionCorrect}✓`;
 
-  // Badge
+  const _metaFeitas = (historicoData[isoToday()] && historicoData[isoToday()].meta) || 0;
+  const _metaPct = Math.min(100, Math.round((_metaFeitas / metaDiaria) * 100));
+  const _metaEl = document.getElementById('meta-progress-fill');
+  const _metaTxt = document.getElementById('meta-progress-text');
+  if (_metaEl) _metaEl.style.width = _metaPct + '%';
+  if (_metaTxt) {
+    const _metaRevBatida = _metaFeitas >= metaDiaria;
+    if (_metaRevBatida) {
+      const _novasFeitas = (historicoData[isoToday()] && historicoData[isoToday()].novas) || 0;
+      const _novasPct = Math.min(100, Math.round((_novasFeitas / metaNovas) * 100));
+      if (_metaEl) { _metaEl.style.width = _novasPct + '%'; _metaEl.style.background = 'linear-gradient(90deg, var(--accent2), var(--accent))'; }
+      _metaTxt.textContent = '🌱 Novas: ' + _novasFeitas + '/' + metaNovas;
+    } else {
+      if (_metaEl) _metaEl.style.background = 'linear-gradient(90deg, var(--green), var(--accent))';
+      _metaTxt.textContent = '🔁 Rev: ' + _metaFeitas + '/' + metaDiaria;
+    }
+  }
+
   let badgeClass = 'nova', badgeText = '🌱 Nova';
   if (data) {
     if (streak === 0) { badgeClass = 'erro'; badgeText = `🔙 Erro recente · 🔥${streak}`; }
     else { badgeClass = 'revisao'; badgeText = `📅 Revisão ${data} · 🔥${streak}`; }
   }
 
-  // Options
   const ops = shuffle([...q.opcoes]);
   const optsHtml = ops.map(op => `
     <button class="option-btn" onclick="checkAnswer(this, '${escStr(op)}')">${escHtml(op)}</button>
   `).join('');
 
-  // Monta o HTML inicial sem imagens ainda
   document.getElementById('quiz-body').innerHTML = `
     <span class="streak-badge ${badgeClass}">${badgeText}</span>
     <div class="question-text">${q.pergunta.replace(/\n/g,'<br>')}</div>
@@ -1369,19 +1480,16 @@ async function renderQuestion() {
     <button class="btn btn-danger" style="flex:1" onclick="finishSession()">Encerrar</button>
     <button class="btn btn-primary" style="flex:2;display:none" id="btn-next" onclick="nextQuestion()">Próxima →</button>`;
 
-  // Carrega imagens se existirem
   const imagens = q.imagens || [];
   if (imagens.length > 0) {
     const container = document.getElementById('image-container');
     container.innerHTML = '<div class="loading" style="padding:16px"><div class="spinner"></div>Carregando imagem...</div>';
+    
+    const imgWrapper = document.createElement('div');
 
     for (const caminho of imagens) {
-      // Extrai apenas o nome do arquivo do caminho completo
-      // Ex: "/content/drive/MyDrive/OGMO/figura.png" → "figura.png"
       const nomeArquivo = caminho.split('/').pop();
-
       try {
-        // Verifica se já está no cache para não baixar de novo
         if (!imageCache[nomeArquivo]) {
           const fileId = await searchImageOnDrive(nomeArquivo);
           if (fileId) {
@@ -1390,23 +1498,20 @@ async function renderQuestion() {
         }
 
         if (imageCache[nomeArquivo]) {
-          container.innerHTML = '';
           const img = document.createElement('img');
           img.src = imageCache[nomeArquivo];
           img.style.cssText = 'max-width:100%;border-radius:8px;margin:12px 0;display:block;';
-          container.appendChild(img);
+          imgWrapper.appendChild(img);
         } else {
-          container.innerHTML = `<div style="color:var(--text2);font-size:0.8rem;padding:8px">⚠️ Imagem não encontrada: ${escHtml(nomeArquivo)}</div>`;
+          imgWrapper.innerHTML += `<div style="color:var(--text2);font-size:0.8rem;padding:8px">⚠️ Imagem não encontrada: ${escHtml(nomeArquivo)}</div>`;
         }
       } catch(e) {
-        container.innerHTML = `<div style="color:var(--red);font-size:0.8rem;padding:8px">❌ Erro ao carregar imagem</div>`;
+        imgWrapper.innerHTML += `<div style="color:var(--red);font-size:0.8rem;padding:8px">❌ Erro ao carregar imagem</div>`;
       }
     }
+    container.innerHTML = '';
+    container.appendChild(imgWrapper);
   }
-}
-
-function escStr(s) {
-  return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,' ');
 }
 
 async function checkAnswer(btn, resposta) {
@@ -1414,7 +1519,6 @@ async function checkAnswer(btn, resposta) {
   const acertou = resposta === q.resposta_correta;
   sessionTotal++;
 
-  // Disable all
   document.querySelectorAll('.option-btn').forEach(b => {
     b.disabled = true;
     if (b.textContent.trim() === q.resposta_correta) b.classList.add('correct');
@@ -1425,12 +1529,14 @@ async function checkAnswer(btn, resposta) {
   if (acertou) sessionCorrect++;
   else sessionErrors.push(q);
 
-  // SRS update
   const hoje = getBrazilDate();
-  const hojeIso = hoje.toISOString().split('T')[0];
+  const hojeIso = toLocalISOString(hoje);
   let msgRev = '';
 
   if (srsMode) {
+    const eraErradaAnterior = (q.streak === 0) && !!q.proxima_revisao;
+    const eraNova = !q.proxima_revisao; 
+
     if (acertou) {
       const streak = (q.streak || 0) + 1;
       const dias = {1:1,2:3,3:7,4:15,5:30}[streak] || 45;
@@ -1446,14 +1552,10 @@ async function checkAnswer(btn, resposta) {
     q.acertou_ultima_vez = acertou;
     q.data_resposta = hoje.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
-    // Registra no histórico do dia
-    registrarNoHistorico(acertou);
-    // Save async
+    registrarNoHistorico(acertou, eraErradaAnterior, eraNova);
     saveProgress(q);
-    atualizarHistorico(acertou);
   }
 
-  // Feedback
   const explicacaoOpcao = (q.explicacoes_opcoes && q.explicacoes_opcoes[resposta]) ? q.explicacoes_opcoes[resposta] : '';
   const explicacaoGeral = q.explicacao || '';
   let explicacaoHtml = '';
@@ -1477,53 +1579,61 @@ function nextQuestion() {
   renderQuestion();
 }
 
-// Controla se o modal de erro de conexão já foi exibido nesta sessão
-let erroConexaoExibido = false;
-
 function continuarSemSalvar() {
-  // Usuário escolheu continuar — não mostra o modal de novo nesta sessão
   erroConexaoExibido = true;
   document.getElementById('modal-offline').classList.add('hidden');
 }
 
 function voltarAoMenu() {
-  // Usuário escolheu voltar — reseta tudo e vai para o browser
   document.getElementById('modal-offline').classList.add('hidden');
   erroConexaoExibido = false;
   showScreen('screen-browser');
 }
 
 async function saveProgress(q) {
-  // Se usuário já escolheu continuar sem salvar, não tenta mais
   if (erroConexaoExibido) return;
-
   try {
     const fileId = q._fileId;
     if (!fileId) return;
-    const data = await readJsonFile(fileId);
-    const idx = data.findIndex(x => x.id === q.id);
-    if (idx >= 0) {
-      data[idx].respondida = q.respondida;
-      data[idx].acertou_ultima_vez = q.acertou_ultima_vez;
-      data[idx].streak = q.streak;
-      data[idx].proxima_revisao = q.proxima_revisao;
-      data[idx].data_resposta = q.data_resposta;
-      await driveUpdate(fileId, data);
+
+    if (jsonCache[fileId]) {
+      const idx = jsonCache[fileId].findIndex(x => x.id === q.id);
+      if (idx >= 0) {
+        jsonCache[fileId][idx].respondida = q.respondida;
+        jsonCache[fileId][idx].acertou_ultima_vez = q.acertou_ultima_vez;
+        jsonCache[fileId][idx].streak = q.streak;
+        jsonCache[fileId][idx].proxima_revisao = q.proxima_revisao;
+        jsonCache[fileId][idx].data_resposta = q.data_resposta;
+      }
+      const dadosParaSalvar = jsonCache[fileId].map(function(q) {
+        const copia = Object.assign({}, q);
+        delete copia._fileId;
+        delete copia._fileName;
+        return copia;
+      });
+      await driveUpdate(fileId, dadosParaSalvar);
+    } else {
+      const data = await readJsonFile(fileId);
+      const idx = data.findIndex(x => x.id === q.id);
+      if (idx >= 0) {
+        data[idx].respondida = q.respondida;
+        data[idx].acertou_ultima_vez = q.acertou_ultima_vez;
+        data[idx].streak = q.streak;
+        data[idx].proxima_revisao = q.proxima_revisao;
+        data[idx].data_resposta = q.data_resposta;
+        await driveUpdate(fileId, data);
+      }
     }
   } catch (e) {
     console.error('Save error:', e);
-    // Mostra modal grande na primeira falha de conexão
-    if (!erroConexaoExibido) {
+    if (!erroConexaoExibido && e.message !== "Sessão expirada") {
       document.getElementById('modal-offline').classList.remove('hidden');
     }
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// RESULTS
-// ═══════════════════════════════════════════════════════
 function finishSession() {
-  salvarHistorico(); // Salva histórico ao finalizar sessão
+  salvarHistorico(); 
   showScreen('screen-results');
   const pct = sessionTotal > 0 ? Math.round((sessionCorrect/sessionTotal)*100) : 0;
   document.getElementById('results-score').textContent = pct + '%';
@@ -1548,18 +1658,8 @@ function finishSession() {
 }
 
 // ═══════════════════════════════════════════════════════
-
-
-// ═══════════════════════════════════════════════════════
 // HISTÓRICO E ESTATÍSTICAS
 // ═══════════════════════════════════════════════════════
-
-const HISTORICO_FILENAME = 'quiz_historico.json';
-let historicoFileId = null;
-let historicoData = {};
-let metaDiaria = 50;
-let sortAreaMode = 'menor';
-
 async function carregarHistorico() {
   try {
     const q = "name='" + HISTORICO_FILENAME + "' and 'root' in parents and trashed=false";
@@ -1607,7 +1707,7 @@ async function salvarHistorico() {
   }
 }
 
-function registrarNoHistorico(acertou) {
+function registrarNoHistorico(acertou, eraErradaAnterior, eraNova) {
   const hoje = isoToday();
   if (!historicoData[hoje]) {
     historicoData[hoje] = { respondidas: 0, acertos: 0, erros: 0 };
@@ -1615,6 +1715,17 @@ function registrarNoHistorico(acertou) {
   historicoData[hoje].respondidas++;
   if (acertou) historicoData[hoje].acertos++;
   else historicoData[hoje].erros++;
+
+  if (!eraErradaAnterior && acertou) {
+    if (!historicoData[hoje].meta) historicoData[hoje].meta = 0;
+    historicoData[hoje].meta++;
+  }
+
+  if (eraNova === true) {
+    if (!historicoData[hoje].novas) historicoData[hoje].novas = 0;
+    historicoData[hoje].novas++;
+  }
+
   if (historicoData[hoje].respondidas % 5 === 0) salvarHistorico();
 }
 
@@ -1627,20 +1738,33 @@ async function showStats() {
     await carregarHistorico();
   }
 
-  const fileIds = Object.keys(selectedFiles);
-  if (fileIds.length === 0) {
+  if (Object.keys(selectedFiles).length === 0) {
     el.innerHTML = '<div class="empty-state" style="padding:48px 24px"><div class="icon">📂</div><p>Selecione arquivos na tela principal primeiro para ver as estatísticas.</p></div>';
     return;
   }
 
   let todasQuestoes = [];
-  for (const fid of fileIds) {
-    try {
-      const data = await readJsonFile(fid);
-      if (Array.isArray(data)) todasQuestoes.push(...data);
-    } catch(e) {}
+  if (cacheValid && allLoadedQuestions.length > 0) {
+    todasQuestoes = allLoadedQuestions;
+  } else {
+    const fileIds = Object.keys(selectedFiles);
+    const results = await Promise.all(fileIds.map(async (fid) => {
+      try {
+        const data = await readJsonFile(fid);
+        if (Array.isArray(data)) {
+          data.forEach(q => { q._fileId = fid; q._fileName = selectedFiles[fid].name; });
+          jsonCache[fid] = data;
+          return data;
+        }
+      } catch(e) {}
+      return [];
+    }));
+    results.forEach(data => todasQuestoes.push(...data));
+    allLoadedQuestions = todasQuestoes;
+    cacheValid = true;
   }
 
+  statsQuestoes = todasQuestoes;
   renderStats(todasQuestoes);
 }
 
@@ -1648,26 +1772,24 @@ function renderStats(questoes) {
   const hoje = isoToday();
   const el = document.getElementById('stats-content');
 
-  // Globais
   const respondidas = questoes.filter(function(q) { return q.respondida; });
   const totalRespondidas = respondidas.length;
   const totalAcertos = respondidas.filter(function(q) { return q.acertou_ultima_vez; }).length;
   const totalErros = totalRespondidas - totalAcertos;
   const pctGlobal = totalRespondidas > 0 ? Math.round((totalAcertos / totalRespondidas) * 100) : 0;
 
-  // Hoje
   const hojeData = historicoData[hoje] || { respondidas: 0, acertos: 0, erros: 0 };
-  const aprovHoje = hojeData.respondidas > 0 ? Math.round((hojeData.acertos / hojeData.respondidas) * 100) : 0;
-  const metaPct = Math.min(100, Math.round((hojeData.respondidas / metaDiaria) * 100));
+  
+  const metaPct   = Math.min(100, Math.round(((hojeData.meta || 0) / metaDiaria) * 100));
   const metaColor = metaPct >= 100 ? 'var(--green)' : metaPct >= 60 ? 'var(--accent)' : 'var(--orange)';
+  
+  const novasFeitas = hojeData.novas || 0;
+  const metaNovasPct   = Math.min(100, Math.round((novasFeitas / metaNovas) * 100));
+  const metaNovasColor = metaNovasPct >= 100 ? 'var(--green)' : metaNovasPct >= 60 ? 'var(--accent)' : 'var(--orange)';
+  const metaRevBatida  = (hojeData.meta || 0) >= metaDiaria;
 
-  // Streak
   const streakDias = calcularStreakDias();
-
-  // Gráfico
   const graficoHtml = renderGrafico14Dias();
-
-  // Áreas
   const areasHtml = renderAreas(questoes);
 
   el.innerHTML =
@@ -1675,16 +1797,40 @@ function renderStats(questoes) {
       '<div class="stats-section-title">📅 Hoje</div>' +
       '<div class="stat-card wide" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-          '<span style="font-size:0.85rem;font-weight:600">Meta diária</span>' +
-          '<span style="font-family:\'Space Mono\',monospace;font-size:0.85rem;color:' + metaColor + '">' + hojeData.respondidas + ' / ' + metaDiaria + '</span>' +
+          '<span style="font-size:0.85rem;font-weight:600">🔁 Meta de revisões</span>' +
+          '<span id="meta-count" style="font-family:\'Space Mono\',monospace;font-size:0.85rem;color:' + metaColor + '">' + (hojeData.meta || 0) + ' / ' + metaDiaria + '</span>' +
         '</div>' +
         '<div class="meta-bar-wrap"><div class="meta-bar-fill" id="meta-bar" style="width:' + metaPct + '%;background:' + metaColor + '"></div></div>' +
-        '<div style="font-size:0.72rem;color:var(--text2);margin-top:4px">' + (metaPct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaDiaria - hojeData.respondidas) + ' questões') + '</div>' +
-        '<div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">' +
-          '<span style="font-size:0.78rem;color:var(--text2)">Meta:</span>' +
-          '<input type="range" min="10" max="200" step="10" value="' + metaDiaria + '" oninput="atualizarMeta(this.value)" style="flex:1;accent-color:var(--accent)">' +
-          '<span id="meta-val" style="font-family:\'Space Mono\',monospace;font-size:0.9rem;color:var(--accent);min-width:40px;text-align:right">' + metaDiaria + '</span>' +
+        '<div id="meta-texto" style="font-size:0.72rem;color:var(--text2);margin-top:4px">' + (metaPct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaDiaria - (hojeData.meta || 0)) + ' revisões') + '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" id="meta-display">' +
+          '<span style="font-size:0.78rem;color:var(--text2)">Meta revisões:</span>' +
+          '<span style="font-family:\'Space Mono\',monospace;font-size:0.95rem;color:var(--accent);font-weight:700">' + metaDiaria + '</span>' +
+          '<button onclick="editarMeta()" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:0.78rem;padding:4px 10px;cursor:pointer">✏️ Editar</button>' +
         '</div>' +
+        '<div style="display:none;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" id="meta-edit">' +
+          '<span style="font-size:0.78rem;color:var(--text2)">Meta revisões:</span>' +
+          '<input type="number" id="meta-input" min="1" max="999" value="' + metaDiaria + '" style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.95rem;padding:4px 8px;text-align:center">' +
+          '<button onclick="confirmarMeta()" style="margin-left:auto;background:var(--accent);border:none;border-radius:8px;color:white;font-size:0.78rem;padding:5px 12px;cursor:pointer;font-weight:600">OK</button>' +
+        '</div>' +
+        '<div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border)">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+            '<span style="font-size:0.85rem;font-weight:600">🌱 Meta de novas</span>' +
+            '<span id="meta-novas-count" style="font-family:\'Space Mono\',monospace;font-size:0.85rem;color:' + (metaRevBatida ? metaNovasColor : 'var(--text2)') + '">' + (metaRevBatida ? novasFeitas + ' / ' + metaNovas : '🔒 Liberada ao bater revisões') + '</span>' +
+          '</div>' +
+          '<div class="meta-bar-wrap"><div class="meta-bar-fill" id="meta-novas-bar" style="width:' + (metaRevBatida ? metaNovasPct : 0) + '%;background:' + metaNovasColor + '"></div></div>' +
+          '<div id="meta-novas-texto" style="font-size:0.72rem;color:var(--text2);margin-top:4px">' + (metaRevBatida ? (metaNovasPct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaNovas - novasFeitas) + ' novas') : 'Complete as revisões para liberar questões novas') + '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" id="meta-novas-display">' +
+            '<span style="font-size:0.78rem;color:var(--text2)">Meta novas:</span>' +
+            '<span style="font-family:\'Space Mono\',monospace;font-size:0.95rem;color:var(--accent);font-weight:700">' + metaNovas + '</span>' +
+            '<button onclick="editarMetaNovas()" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:0.78rem;padding:4px 10px;cursor:pointer">✏️ Editar</button>' +
+          '</div>' +
+          '<div style="display:none;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" id="meta-novas-edit">' +
+            '<span style="font-size:0.78rem;color:var(--text2)">Meta novas:</span>' +
+            '<input type="number" id="meta-novas-input" min="1" max="999" value="' + metaNovas + '" style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.95rem;padding:4px 8px;text-align:center">' +
+            '<button onclick="confirmarMetaNovas()" style="margin-left:auto;background:var(--accent);border:none;border-radius:8px;color:white;font-size:0.78rem;padding:5px 12px;cursor:pointer;font-weight:600">OK</button>' +
+          '</div>' +
+        '</div>' +
+
       '</div>' +
       '<div class="stats-grid">' +
         '<div class="stat-card"><div class="stat-value" style="color:var(--accent)">' + hojeData.respondidas + '</div><div class="stat-label">Respondidas hoje</div></div>' +
@@ -1722,29 +1868,85 @@ function renderStats(questoes) {
     '</div>';
 }
 
-function atualizarMeta(val) {
-  metaDiaria = parseInt(val);
-  document.getElementById('meta-val').textContent = val;
+function editarMeta() {
+  document.getElementById('meta-display').style.display = 'none';
+  const ed = document.getElementById('meta-edit');
+  ed.style.display = 'flex';
+  document.getElementById('meta-input').focus();
+}
+
+function confirmarMeta() {
+  const input = document.getElementById('meta-input');
+  const val = parseInt(input.value);
+  if (!val || val < 1) return;
+  metaDiaria = val;
+  localStorage.setItem('quiz_meta_diaria', val);
+  
+  document.getElementById('meta-edit').style.display = 'none';
+  const disp = document.getElementById('meta-display');
+  disp.style.display = 'flex';
+  disp.querySelector('span:nth-child(2)').textContent = metaDiaria + ' questões';
+  
   const hojeData = historicoData[isoToday()] || { respondidas: 0, acertos: 0, erros: 0 };
-  const metaPct = Math.min(100, Math.round((hojeData.respondidas / metaDiaria) * 100));
+  const metaPct = Math.min(100, Math.round(((hojeData.meta || 0) / metaDiaria) * 100));
   const metaColor = metaPct >= 100 ? 'var(--green)' : metaPct >= 60 ? 'var(--accent)' : 'var(--orange)';
   const bar = document.getElementById('meta-bar');
   if (bar) { bar.style.width = metaPct + '%'; bar.style.background = metaColor; }
+  const metaTexto = document.getElementById('meta-texto');
+  if (metaTexto) metaTexto.textContent = metaPct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaDiaria - (hojeData.meta || 0)) + ' questões';
+  const metaCount = document.getElementById('meta-count');
+  if (metaCount) metaCount.textContent = (hojeData.meta || 0) + ' / ' + metaDiaria;
+  metaCount && (metaCount.style.color = metaColor);
+}
+
+function editarMetaNovas() {
+  document.getElementById('meta-novas-display').style.display = 'none';
+  const ed = document.getElementById('meta-novas-edit');
+  ed.style.display = 'flex';
+  document.getElementById('meta-novas-input').focus();
+}
+
+function confirmarMetaNovas() {
+  const input = document.getElementById('meta-novas-input');
+  const val = parseInt(input.value);
+  if (!val || val < 1) return;
+  metaNovas = val;
+  localStorage.setItem('quiz_meta_novas', val);
+  document.getElementById('meta-novas-edit').style.display = 'none';
+  document.getElementById('meta-novas-display').style.display = 'flex';
+  document.querySelector('#meta-novas-display span:nth-child(2)').textContent = metaNovas;
+  
+  const hojeData = historicoData[isoToday()] || {};
+  const novasFeitas = hojeData.novas || 0;
+  const metaRevBatida = (hojeData.meta || 0) >= metaDiaria;
+  const pct = metaRevBatida ? Math.min(100, Math.round((novasFeitas / metaNovas) * 100)) : 0;
+  const cor = pct >= 100 ? 'var(--green)' : pct >= 60 ? 'var(--accent)' : 'var(--orange)';
+  const bar = document.getElementById('meta-novas-bar');
+  if (bar) { bar.style.width = pct + '%'; bar.style.background = cor; }
+  const txt = document.getElementById('meta-novas-texto');
+  if (txt) txt.textContent = metaRevBatida ? (pct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaNovas - novasFeitas) + ' novas') : 'Complete as revisões para liberar questões novas';
+  const cnt = document.getElementById('meta-novas-count');
+  if (cnt) { cnt.textContent = metaRevBatida ? novasFeitas + ' / ' + metaNovas : '🔒 Liberada ao bater revisões'; cnt.style.color = metaRevBatida ? cor : 'var(--text2)'; }
 }
 
 function calcularStreakDias() {
+  const hoje = isoToday();
   let streak = 0;
-  const d = getBrazilDate();
+  let d = getBrazilDate();
+  
+  d.setDate(d.getDate() - 1);
+
   while (true) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const iso = y + '-' + m + '-' + day;
-    if (historicoData[iso] && historicoData[iso].respondidas > 0) {
+    const iso = toLocalISOString(d);
+    if (historicoData[iso] && (historicoData[iso].meta || 0) >= metaDiaria) {
       streak++;
       d.setDate(d.getDate() - 1);
     } else { break; }
   }
+
+  const hojeData = historicoData[hoje];
+  if (hojeData && (hojeData.meta || 0) >= metaDiaria) streak++;
+
   return streak;
 }
 
@@ -1754,11 +1956,8 @@ function renderGrafico14Dias() {
   for (let i = 13; i >= 0; i--) {
     const dd = new Date(base);
     dd.setDate(dd.getDate() - i);
-    const y2 = dd.getFullYear();
-    const m2 = String(dd.getMonth() + 1).padStart(2, '0');
-    const d2 = String(dd.getDate()).padStart(2, '0');
-    const iso = y2 + '-' + m2 + '-' + d2;
-    const label = dd.getDate() + '/' + (dd.getMonth()+1);
+    const iso = toLocalISOString(dd);
+    const label = (dd.getDate()) + '/' + (dd.getMonth()+1);
     const val = historicoData[iso] ? historicoData[iso].respondidas : 0;
     dias.push({ iso: iso, label: label, val: val });
   }
@@ -1789,49 +1988,76 @@ function renderAreas(questoes) {
     }
   });
 
-  const areaStats = Object.keys(areas).map(function(area) {
+  var areaRespondidas = [];
+  var areaNaoRespondidas = [];
+  Object.keys(areas).forEach(function(area) {
     const subs = areas[area];
     const total = Object.values(subs).reduce(function(s, v) { return s + v.total; }, 0);
     const acertos = Object.values(subs).reduce(function(s, v) { return s + v.acertos; }, 0);
     const pct = total > 0 ? Math.round((acertos / total) * 100) : 0;
-    return { area: area, subs: subs, total: total, acertos: acertos, pct: pct };
+    const entry = { area: area, subs: subs, total: total, acertos: acertos, pct: pct };
+    if (total > 0) areaRespondidas.push(entry);
+    else areaNaoRespondidas.push(entry);
   });
 
-  if (sortAreaMode === 'menor') areaStats.sort(function(a, b) { return a.pct - b.pct; });
-  else if (sortAreaMode === 'maior') areaStats.sort(function(a, b) { return b.pct - a.pct; });
-  else areaStats.sort(function(a, b) { return a.area.localeCompare(b.area); });
+  if (sortAreaMode === 'menor') areaRespondidas.sort(function(a, b) { return a.pct - b.pct; });
+  else if (sortAreaMode === 'maior') areaRespondidas.sort(function(a, b) { return b.pct - a.pct; });
+  else areaRespondidas.sort(function(a, b) { return a.area.localeCompare(b.area); });
+  areaNaoRespondidas.sort(function(a, b) { return a.area.localeCompare(b.area); });
 
-  return areaStats.map(function(a, i) {
+  function renderAreaItem(a, i) {
     const pctColor = a.pct >= 70 ? 'var(--green)' : a.pct >= 40 ? 'var(--orange)' : 'var(--red)';
 
     const subEntries = Object.entries(a.subs).map(function(entry) {
       const sub = entry[0]; const s = entry[1];
-      return { sub: sub, total: s.total, acertos: s.acertos, pct: s.total > 0 ? Math.round((s.acertos / s.total) * 100) : 0 };
+      return { sub: sub, total: s.total, acertos: s.acertos, pct: s.total > 0 ? Math.round((s.acertos / s.total) * 100) : -1 };
     });
-    if (sortAreaMode === 'menor') subEntries.sort(function(a, b) { return a.pct - b.pct; });
-    else if (sortAreaMode === 'maior') subEntries.sort(function(a, b) { return b.pct - a.pct; });
+    if (sortAreaMode === 'menor') subEntries.sort(function(a, b) { return (a.pct < 0 ? 999 : a.pct) - (b.pct < 0 ? 999 : b.pct); });
+    else if (sortAreaMode === 'maior') subEntries.sort(function(a, b) { return (b.pct < 0 ? -1 : b.pct) - (a.pct < 0 ? -1 : a.pct); });
     else subEntries.sort(function(a, b) { return a.sub.localeCompare(b.sub); });
 
     const subsHtml = subEntries.map(function(s) {
-      const sc = s.pct >= 70 ? 'var(--green)' : s.pct >= 40 ? 'var(--orange)' : 'var(--red)';
+      const nr = s.pct < 0;
+      const sc = nr ? 'var(--text2)' : s.pct >= 70 ? 'var(--green)' : s.pct >= 40 ? 'var(--orange)' : 'var(--red)';
       return '<div class="subarea-item">' +
         '<span class="subarea-name">' + escHtml(s.sub) + '</span>' +
-        '<span style="font-size:0.72rem;color:var(--text2);margin-right:8px">' + s.acertos + '/' + s.total + '</span>' +
-        '<span class="subarea-pct" style="color:' + sc + '">' + s.pct + '%</span>' +
+        (nr ? '<span style="font-size:0.72rem;color:var(--text2);margin-right:8px">N/R</span>' :
+              '<span style="font-size:0.72rem;color:var(--text2);margin-right:8px">' + s.acertos + '/' + s.total + '</span>') +
+        '<span class="subarea-pct" style="color:' + sc + '">' + (nr ? 'N/R' : s.pct + '%') + '</span>' +
       '</div>';
     }).join('');
+
+    const pctLabel = a.total === 0 ? 'N/R' : a.pct + '%';
+    const pctC = a.total === 0 ? 'var(--text2)' : pctColor;
+    const barW = a.total === 0 ? 0 : a.pct;
 
     return '<div class="area-item">' +
       '<div class="area-header" onclick="toggleArea(\'area-' + i + '\')">' +
         '<span class="area-name">' + escHtml(a.area) + '</span>' +
-        '<span style="font-size:0.72rem;color:var(--text2);margin-right:8px">' + a.acertos + '/' + a.total + '</span>' +
-        '<span class="area-pct" style="color:' + pctColor + '">' + a.pct + '%</span>' +
+        '<span style="font-size:0.72rem;color:var(--text2);margin-right:8px">' + (a.total === 0 ? 'N/R' : a.acertos + '/' + a.total) + '</span>' +
+        '<span class="area-pct" style="color:' + pctC + '">' + pctLabel + '</span>' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>' +
       '</div>' +
-      '<div class="area-mini-bar"><div class="area-mini-bar-fill" style="width:' + a.pct + '%;background:' + pctColor + '"></div></div>' +
+      '<div class="area-mini-bar"><div class="area-mini-bar-fill" style="width:' + barW + '%;background:' + pctC + '"></div></div>' +
       '<div class="subarea-list" id="area-' + i + '">' + subsHtml + '</div>' +
     '</div>';
-  }).join('');
+  }
+
+  var html = areaRespondidas.map(function(a, i) { return renderAreaItem(a, i); }).join('');
+
+  if (areaNaoRespondidas.length > 0) {
+    html += '<div style="margin-top:8px">' +
+      '<div onclick="toggleArea(\'areas-nr\')" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border)">' +
+        '<span style="font-size:0.78rem;color:var(--text2);flex:1">N/R — Não respondidas (' + areaNaoRespondidas.length + ' área' + (areaNaoRespondidas.length > 1 ? 's' : '') + ')</span>' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>' +
+      '</div>' +
+      '<div id="areas-nr" style="display:none">' +
+        areaNaoRespondidas.map(function(a, i) { return renderAreaItem(a, 'nr-' + i); }).join('') +
+      '</div>' +
+    '</div>';
+  }
+
+  return html;
 }
 
 function toggleArea(id) {
@@ -1846,42 +2072,13 @@ function setSortArea(mode) {
   const modeMap = { menor: 0, maior: 1, az: 2 };
   if (tabs[modeMap[mode]]) tabs[modeMap[mode]].classList.add('active');
   const list = document.getElementById('areas-list');
-  if (list) list.innerHTML = renderAreas(allLoadedQuestions);
+  if (list) list.innerHTML = renderAreas(statsQuestoes);
 }
 
 </script>
 
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-<!-- ═══════════════ SCREEN: STATS ═══════════════ -->
-<div id="screen-stats" class="screen">
-  <div class="topbar">
-    <button class="btn-icon" onclick="showScreen('screen-browser')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    </button>
-    <span class="topbar-title">Estatísticas</span>
-  </div>
-  <div id="stats-content" style="padding:0 0 40px 0; overflow-y:auto;">
-    <div class="loading"><div class="spinner"></div>Calculando...</div>
-  </div>
-</div>
-
-<!-- ═══════════════ MODAL: ERRO DE CONEXÃO ═══════════════ -->
-<div class="modal-overlay hidden" id="modal-offline">
-  <div class="modal-box">
-    <div class="modal-icon">📡</div>
-    <div class="modal-title">Sem conexão com o Drive</div>
-    <div class="modal-body">
-      Não foi possível salvar seu progresso.<br><br>
-      Você pode <b>continuar estudando</b> sem salvar, ou <b>voltar ao menu</b> e tentar novamente quando tiver internet.
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-primary" onclick="continuarSemSalvar()">Continuar sem salvar</button>
-      <button class="btn btn-secondary" onclick="voltarAoMenu()">Voltar ao menu</button>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
