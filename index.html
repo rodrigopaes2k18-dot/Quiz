@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>QUIZZ</title>
+<title>QUIZZ Ultimate SRS</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   :root {
     --bg: #0f1117;
@@ -94,10 +95,7 @@
   .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
 
   /* ── BROWSER ── */
-  #screen-browser {
-    padding: 0;
-    background: var(--bg);
-  }
+  #screen-browser { padding: 0; background: var(--bg); }
 
   .topbar {
     background: var(--surface);
@@ -175,7 +173,6 @@
 
   .file-info { flex: 1; min-width: 0; }
   .file-name { font-size: 0.9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .file-meta { font-size: 0.75rem; color: var(--text2); margin-top: 2px; }
 
   .file-check {
     width: 22px; height: 22px;
@@ -220,6 +217,7 @@
     transition: all 0.2s;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
   }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -269,13 +267,14 @@
     color: var(--text2);
   }
 
-  .progress-bar {
+  .progress-bar, .meta-progress-bar {
     flex: 1;
     height: 4px;
     background: var(--border);
     border-radius: 2px;
     overflow: hidden;
   }
+  
   .meta-progress-row {
     display: flex;
     align-items: center;
@@ -284,13 +283,7 @@
     color: var(--text2);
     padding-top: 4px;
   }
-  .meta-progress-bar {
-    flex: 1;
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
+  
   .meta-progress-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--green), var(--accent));
@@ -359,9 +352,6 @@
     display: none;
   }
   .feedback-box.show { display: block; }
-  .feedback-result { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
-  .feedback-result.correct { color: var(--green); }
-  .feedback-result.wrong { color: var(--red); }
   .feedback-explanation { font-size: 0.85rem; color: var(--text2); line-height: 1.6; }
   .feedback-schedule { font-size: 0.75rem; color: var(--text2); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
 
@@ -376,17 +366,8 @@
   }
 
   /* ── RESULTS ── */
-  #screen-results {
-    padding: 24px 16px;
-    background: var(--bg);
-    overflow-y: auto;
-  }
-
-  .results-header {
-    text-align: center;
-    margin-bottom: 32px;
-  }
-
+  #screen-results { padding: 24px 16px; background: var(--bg); overflow-y: auto; }
+  .results-header { text-align: center; margin-bottom: 32px; }
   .results-score {
     font-family: 'Space Mono', monospace;
     font-size: 3rem;
@@ -395,9 +376,7 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-
   .results-label { font-size: 0.85rem; color: var(--text2); margin-top: 4px; }
-
   .error-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -410,357 +389,64 @@
   .error-answer { font-size: 0.82rem; color: var(--green); margin-bottom: 8px; }
   .error-expl { font-size: 0.8rem; color: var(--text2); line-height: 1.5; }
 
-  /* ── LOADING ── */
-  .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 40px;
-    color: var(--text2);
-    font-size: 0.85rem;
-  }
-
-  .spinner {
-    width: 32px; height: 32px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
+  /* ── LOADING & TOAST & MODAL ── */
+  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 40px; color: var(--text2); font-size: 0.85rem; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── TOAST ── */
-  .toast {
-    position: fixed;
-    bottom: 80px; left: 50%; transform: translateX(-50%);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 20px;
-    font-size: 0.82rem;
-    color: var(--text);
-    z-index: 100;
-    opacity: 0;
-    transition: opacity 0.3s;
-    white-space: nowrap;
-    pointer-events: none;
-  }
+  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 20px; font-size: 0.82rem; color: var(--text); z-index: 100; opacity: 0; transition: opacity 0.3s; white-space: nowrap; pointer-events: none; }
   .toast.show { opacity: 1; }
 
-  /* ── FILTER PANEL ── */
-  .filter-panel {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 12px 16px;
-  }
-  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-  .filter-row:last-child { margin-bottom: 0; }
-
-  select, input[type=text] {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.82rem;
-    padding: 8px 12px;
-    flex: 1;
-    min-width: 120px;
-  }
-  select:focus, input:focus { outline: none; border-color: var(--accent); }
-
-  .toggle-srs {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.82rem;
-    color: var(--text2);
-    cursor: pointer;
-    user-select: none;
-  }
-  .toggle-srs input { display: none; }
-  .toggle-track {
-    width: 36px; height: 20px;
-    background: var(--border);
-    border-radius: 10px;
-    position: relative;
-    transition: background 0.2s;
-    flex-shrink: 0;
-  }
-  .toggle-track::after {
-    content: '';
-    position: absolute;
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    background: white;
-    top: 3px; left: 3px;
-    transition: left 0.2s;
-  }
-  .toggle-srs input:checked + .toggle-track { background: var(--accent); }
-  .toggle-srs input:checked + .toggle-track::after { left: 19px; }
-
-  h3.section-title {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text2);
-    margin: 20px 0 10px;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 48px 24px;
-    color: var(--text2);
-  }
-  .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
-  .empty-state p { font-size: 0.85rem; line-height: 1.6; }
-
-  /* ── MODAL DE ERRO DE CONEXÃO ── */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; }
   .modal-overlay.hidden { display: none; }
-  .modal-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 32px 24px;
-    max-width: 360px;
-    width: 100%;
-    text-align: center;
-  }
+  .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 32px 24px; max-width: 360px; width: 100%; text-align: center; }
   .modal-icon { font-size: 3rem; margin-bottom: 16px; }
   .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; color: var(--text); }
   .modal-body { font-size: 0.88rem; color: var(--text2); line-height: 1.6; margin-bottom: 24px; }
   .modal-actions { display: flex; flex-direction: column; gap: 10px; }
 
-  /* ── STATS SCREEN ── */
-  #screen-stats {
-    background: var(--bg);
-    overflow-y: auto;
-    padding: 0 0 40px 0;
-  }
+  /* ── FILTER PANEL ── */
+  .filter-panel { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; }
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  select, input[type=text] { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; padding: 8px 12px; flex: 1; min-width: 120px; }
+  select:focus, input:focus { outline: none; border-color: var(--accent); }
+  .toggle-srs { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text2); cursor: pointer; user-select: none; }
+  .toggle-srs input { display: none; }
+  .toggle-track { width: 36px; height: 20px; background: var(--border); border-radius: 10px; position: relative; transition: background 0.2s; flex-shrink: 0; }
+  .toggle-track::after { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: white; top: 3px; left: 3px; transition: left 0.2s; }
+  .toggle-srs input:checked + .toggle-track { background: var(--accent); }
+  .toggle-srs input:checked + .toggle-track::after { left: 19px; }
+  h3.section-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); margin: 20px 0 10px; }
 
-  .stats-section {
-    padding: 16px 16px 0;
-  }
+  /* ── STATS SCREEN (NOVO ANALYTICS) ── */
+  #screen-stats { background: var(--bg); overflow-y: auto; padding: 0 0 40px 0; }
+  .stats-section { padding: 16px 16px 0; }
+  .stats-section-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); margin-bottom: 12px; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 12px; text-align: center; }
+  .stat-card.wide { grid-column: 1 / -1; text-align: left; }
+  .stat-value { font-family: 'Space Mono', monospace; font-size: 1.6rem; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 0.72rem; color: var(--text2); }
 
-  .stats-section-title {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text2);
-    margin-bottom: 12px;
-  }
+  /* Meta Diária */
+  .meta-bar-wrap { background: var(--border); border-radius: 4px; height: 8px; overflow: hidden; margin: 8px 0 4px; }
+  .meta-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--green)); transition: width 0.4s; }
 
-  .stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 12px;
-    text-align: center;
-  }
-
-  .stat-card.wide {
-    grid-column: 1 / -1;
-    text-align: left;
-  }
-
-  .stat-value {
-    font-family: 'Space Mono', monospace;
-    font-size: 1.6rem;
-    font-weight: 700;
-    line-height: 1;
-    margin-bottom: 4px;
-  }
-
-  .stat-label {
-    font-size: 0.72rem;
-    color: var(--text2);
-  }
-
-  /* Meta diária */
-  .meta-bar-wrap {
-    background: var(--border);
-    border-radius: 4px;
-    height: 8px;
-    overflow: hidden;
-    margin: 8px 0 4px;
-  }
-
-  .meta-bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    background: linear-gradient(90deg, var(--accent), var(--green));
-    transition: width 0.4s;
-  }
-
-  /* Gráfico de barras */
-  .bar-chart {
-    display: flex;
-    align-items: flex-end;
-    gap: 4px;
-    height: 80px;
-    padding: 0 4px;
-  }
-
-  .bar-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    height: 100%;
-    justify-content: flex-end;
-  }
-
-  .bar-fill {
+  /* Analytics Typography */
+  .analytics-text-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 0.85rem; }
+  .analytics-text-row:last-child { border-bottom: none; }
+  
+  .canvas-container {
     width: 100%;
-    border-radius: 3px 3px 0 0;
-    background: var(--accent);
-    min-height: 2px;
-    transition: height 0.3s;
-  }
-
-  .bar-fill.today { background: var(--accent2); }
-
-  .bar-label {
-    font-size: 0.55rem;
-    color: var(--text2);
-    white-space: nowrap;
-  }
-
-  /* Área/subárea accordion */
-  .area-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    margin-top: 10px;
+    padding: 10px;
+    background: white; /* Gráficos ficam melhores num fundo claro ou você pode ajustar via Chart.js para dark mode */
     border-radius: var(--radius);
-    margin-bottom: 8px;
-    overflow: hidden;
   }
-
-  .area-header {
-    display: flex;
-    align-items: center;
-    padding: 12px 14px;
-    cursor: pointer;
-    gap: 10px;
-  }
-
-  .area-header:hover { background: var(--surface2); }
-
-  .area-name { flex: 1; font-size: 0.88rem; font-weight: 500; }
-
-  .area-pct {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.85rem;
-    font-weight: 700;
-  }
-
-  .area-mini-bar {
-    height: 4px;
-    background: var(--border);
-    margin: 0 14px 10px;
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .area-mini-bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    background: linear-gradient(90deg, var(--accent), var(--green));
-  }
-
-  .subarea-list {
-    display: none;
-    border-top: 1px solid var(--border);
-  }
-
-  .subarea-list.open { display: block; }
-
-  .subarea-item {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px 10px 28px;
-    gap: 10px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .subarea-item:last-child { border-bottom: none; }
-
-  .subarea-name { flex: 1; font-size: 0.82rem; color: var(--text2); }
-
-  .subarea-pct {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.8rem;
-  }
-
-  /* Meta config */
-  .meta-config {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 8px;
-  }
-
-  .meta-config input[type=range] {
-    flex: 1;
-    accent-color: var(--accent);
-  }
-
-  .meta-config-val {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.9rem;
-    color: var(--accent);
-    min-width: 40px;
-    text-align: right;
-  }
-
-  /* Sort tabs */
-  .sort-tabs {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 12px;
-  }
-
-  .sort-tab {
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    background: none;
-    color: var(--text2);
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
-  }
-
-  .sort-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
-
 </style>
 </head>
 <body>
 
-<!-- ═══════════════ SCREENS (DOM CARREGADO ANTES DO SCRIPT) ═══════════════ -->
 <div id="screen-login" class="screen active">
   <div class="login-card">
     <div class="app-logo">QUIZZ</div>
@@ -810,17 +496,11 @@
   <div style="padding: 16px 16px 100px; overflow-y: auto;">
     <h3 class="section-title">Filtros</h3>
     <div class="filter-row">
-      <select id="filter-area" onchange="updateSubArea()">
-        <option>Todas as Áreas</option>
-      </select>
-      <select id="filter-subarea">
-        <option>Todas as Subáreas</option>
-      </select>
+      <select id="filter-area" onchange="updateSubArea()"><option>Todas as Áreas</option></select>
+      <select id="filter-subarea"><option>Todas as Subáreas</option></select>
     </div>
     <div class="filter-row">
-      <select id="filter-nivel">
-        <option>Todos os Níveis</option>
-      </select>
+      <select id="filter-nivel"><option>Todos os Níveis</option></select>
       <input type="text" id="filter-tags" placeholder="Filtrar por tags...">
     </div>
     <h3 class="section-title">Modo de Estudo</h3>
@@ -872,10 +552,10 @@
     <button class="btn-icon" onclick="showScreen('screen-browser')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
-    <span class="topbar-title">Estatísticas</span>
+    <span class="topbar-title">SRS Analytics</span>
   </div>
   <div id="stats-content" style="padding:0 0 40px 0; overflow-y:auto;">
-    <div class="loading"><div class="spinner"></div>Calculando...</div>
+    <div class="loading"><div class="spinner"></div>Calculando Análise...</div>
   </div>
 </div>
 
@@ -896,26 +576,13 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- ═══════════════ SCRIPTS ═══════════════ -->
 <script>
-// CONFIGURAÇÃO
+// CONFIGURAÇÃO DRIVE
 const CLIENT_ID = '345044710042-armqofhvfj88b7gpaf5e0j4phvb6j7fb.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/drive';
 const TOKEN_KEY = 'quiz_access_token';
 const TOKEN_TS_KEY = 'quiz_token_ts';
 const TOKEN_TTL = 55 * 60 * 1000; 
-
-// Inicialização
-window.addEventListener('load', function() {
-  const saved = localStorage.getItem(TOKEN_KEY);
-  const ts = parseInt(localStorage.getItem(TOKEN_TS_KEY) || '0');
-  if (saved && (Date.now() - ts) < TOKEN_TTL) {
-    accessToken = saved;
-    showScreen('screen-browser');
-    loadFolder(null, 'Meu Drive');
-    carregarHistorico();
-  }
-});
 
 // ESTADO
 let tokenClient = null;
@@ -934,33 +601,47 @@ let srsMode = true;
 let sessionQuestions = [];
 let erroConexaoExibido = false;
 
+// HISTÓRICO E METAS
 const HISTORICO_FILENAME = 'quiz_historico.json';
 let historicoFileId = null;
 let historicoData = {};
 let metaDiaria  = parseInt(localStorage.getItem('quiz_meta_diaria')  || '50');
 let metaNovas   = parseInt(localStorage.getItem('quiz_meta_novas')   || '20');
-let sortAreaMode = 'menor';
-let statsQuestoes = []; 
 const imageCache = {};
 
-// ═══════════════════════════════════════════════════════
-// UTILS DE DATA (BLINDADOS CONTRA FUSO HORÁRIO)
-// ═══════════════════════════════════════════════════════
+// Instâncias de Gráficos (Para poder destruir antes de recriar)
+let chartAgendaInstance = null;
+let chartCargaInstance = null;
+let chartEsgotamentoInstance = null;
+
+// PRNG para manter as simulações estáveis como no Python (Seed 42)
+function LCG(seed) {
+    return function() {
+        seed = (seed * 1664525 + 1013904223) % 4294967296;
+        return seed / 4294967296;
+    };
+}
+let seededRandom = LCG(42);
+
+window.addEventListener('load', function() {
+  const saved = localStorage.getItem(TOKEN_KEY);
+  const ts = parseInt(localStorage.getItem(TOKEN_TS_KEY) || '0');
+  if (saved && (Date.now() - ts) < TOKEN_TTL) {
+    accessToken = saved;
+    showScreen('screen-browser');
+    loadFolder(null, 'Meu Drive');
+    carregarHistorico();
+  }
+});
+
 function toLocalISOString(dateObj) {
   const y = dateObj.getFullYear();
   const m = String(dateObj.getMonth() + 1).padStart(2, '0');
   const d = String(dateObj.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
-
-function getBrazilDate() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-}
-
-function isoToday() {
-  return toLocalISOString(getBrazilDate());
-}
-
+function getBrazilDate() { return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })); }
+function isoToday() { return toLocalISOString(getBrazilDate()); }
 function addDays(isoDate, days) {
   const [y, m, d] = isoDate.split('-').map(Number);
   const date = new Date(y, m - 1, d);
@@ -968,20 +649,16 @@ function addDays(isoDate, days) {
   return toLocalISOString(date);
 }
 
-// UTILS GERAIS
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
 }
-
 function showToast(msg, dur = 2500) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), dur);
 }
-
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -989,27 +666,13 @@ function shuffle(arr) {
   }
   return arr;
 }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escStr(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,' '); }
 
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function escStr(s) {
-  return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,' ');
-}
-
-// ═══════════════════════════════════════════════════════
-// GOOGLE AUTH
-// ═══════════════════════════════════════════════════════
 function handleLogin() {
-  if (!window.google) {
-    showToast('⚠️ Carregando Google API...');
-    setTimeout(handleLogin, 1000);
-    return;
-  }
+  if (!window.google) { showToast('⚠️ Carregando Google API...'); setTimeout(handleLogin, 1000); return; }
   tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
+    client_id: CLIENT_ID, scope: SCOPES,
     callback: (resp) => {
       if (resp.error) { showToast('❌ Erro no login'); return; }
       accessToken = resp.access_token;
@@ -1025,24 +688,14 @@ function handleLogin() {
 
 function handleLogout() {
   if (accessToken) google.accounts.oauth2.revoke(accessToken);
-  accessToken = null;
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(TOKEN_TS_KEY);
-  selectedFiles = {};
-  folderStack = [];
+  accessToken = null; localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_TS_KEY);
+  selectedFiles = {}; folderStack = [];
   showScreen('screen-login');
 }
 
-// ═══════════════════════════════════════════════════════
-// DRIVE API COM INTERCEPTADORES 401
-// ═══════════════════════════════════════════════════════
 async function driveGet(url) {
   const r = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (r.status === 401) {
-    handleLogout();
-    alert("Sua sessão expirou por tempo de inatividade. Por favor, faça login novamente.");
-    throw new Error("Sessão expirada");
-  }
+  if (r.status === 401) { handleLogout(); alert("Sessão expirada."); throw new Error("Sessão expirada"); }
   if (!r.ok) throw new Error(`Drive API error: ${r.status}`);
   return r.json();
 }
@@ -1050,82 +703,46 @@ async function driveGet(url) {
 async function driveUpdate(fileId, content) {
   const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
   const r = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: blob
+    method: 'PATCH', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: blob
   });
-  if (r.status === 401) {
-    handleLogout();
-    alert("Sua sessão expirou por tempo de inatividade. Por favor, faça login novamente.");
-    throw new Error("Sessão expirada");
-  }
+  if (r.status === 401) { handleLogout(); alert("Sessão expirada."); throw new Error("Sessão expirada"); }
   if (!r.ok) throw new Error(`Drive update error: ${r.status}`);
 }
 
 async function listFolder(folderId) {
-  const q = folderId
-    ? `'${folderId}' in parents and trashed=false`
-    : `'root' in parents and trashed=false`;
-  const fields = 'files(id,name,mimeType,modifiedTime,size)';
-  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=${encodeURIComponent(fields)}&orderBy=name&pageSize=200`;
+  const q = folderId ? `'${folderId}' in parents and trashed=false` : `'root' in parents and trashed=false`;
+  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType)&orderBy=name&pageSize=200`;
   const data = await driveGet(url);
   return data.files || [];
 }
 
 async function readJsonFile(fileId) {
-  const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-    headers: { Authorization: `Bearer ${accessToken}` }
-  });
-  if (r.status === 401) {
-      handleLogout();
-      alert("Sua sessão expirou. Por favor, faça login novamente.");
-      throw new Error("Sessão expirada");
-  }
+  const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (r.status === 401) { handleLogout(); alert("Sessão expirada."); throw new Error("Sessão expirada"); }
   if (!r.ok) throw new Error(`File read error: ${r.status}`);
   return r.json();
 }
 
-// ═══════════════════════════════════════════════════════
-// BROWSER E GERENCIADOR DE ARQUIVOS
-// ═══════════════════════════════════════════════════════
 async function loadFolder(folderId, folderName) {
   const container = document.getElementById('file-list-container');
   container.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
-
   if (folderId !== null || folderStack.length === 0) {
-    if (folderId === null) {
-      folderStack = [{ id: null, name: 'Meu Drive' }];
-    } else {
+    if (folderId === null) { folderStack = [{ id: null, name: 'Meu Drive' }]; }
+    else {
       const idx = folderStack.findIndex(f => f.id === folderId);
-      if (idx >= 0) {
-        folderStack = folderStack.slice(0, idx + 1);
-      } else {
-        folderStack.push({ id: folderId, name: folderName });
-      }
+      if (idx >= 0) folderStack = folderStack.slice(0, idx + 1);
+      else folderStack.push({ id: folderId, name: folderName });
     }
   }
-
-  renderBreadcrumb();
-
-  const backBtn = document.getElementById('btn-back-browser');
-  backBtn.style.display = folderStack.length > 1 ? 'flex' : 'none';
-
+  document.getElementById('breadcrumb').innerHTML = folderStack.map((f, i) => {
+    return i === folderStack.length - 1 ? `<span style="color:var(--text)">${f.name}</span>` : 
+    `<span onclick="loadFolder('${f.id}', '${f.name}')">${f.name}</span><span class="sep"> / </span>`;
+  }).join('');
+  document.getElementById('btn-back-browser').style.display = folderStack.length > 1 ? 'flex' : 'none';
   try {
     const files = await listFolder(folderId);
     renderFileList(files, folderId);
-  } catch (e) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Erro ao carregar pasta.<br>${e.message}</p></div>`;
-  }
-}
-
-function renderBreadcrumb() {
-  const bc = document.getElementById('breadcrumb');
-  bc.innerHTML = folderStack.map((f, i) => {
-    const isLast = i === folderStack.length - 1;
-    const sep = i > 0 ? '<span class="sep"> / </span>' : '';
-    if (isLast) return `${sep}<span style="color:var(--text)">${f.name}</span>`;
-    return `${sep}<span onclick="loadFolder('${f.id}', '${f.name}')">${f.name}</span>`;
-  }).join('');
+  } catch (e) { container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Erro.<br>${e.message}</p></div>`; }
 }
 
 function navigateUp() {
@@ -1141,153 +758,85 @@ function renderFileList(files, currentFolderId) {
   const jsons = files.filter(f => f.name.endsWith('.json'));
 
   if (folders.length === 0 && jsons.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>Nenhuma pasta ou JSON encontrado aqui.</p></div>';
-    return;
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>Nenhuma pasta ou JSON encontrado aqui.</p></div>'; return;
   }
-
   let html = '';
-
   if (folders.length > 0) {
     html += '<div class="file-list">';
-    if (jsons.length > 0) html += '<p style="font-size:0.72rem;color:var(--text2);padding:8px 0 4px;text-transform:uppercase;letter-spacing:1px;font-weight:600">Pastas</p>';
     folders.forEach(f => {
-      html += `
-        <div class="file-item" onclick="loadFolder('${f.id}', '${escHtml(f.name)}')">
-          <div class="file-icon folder">📁</div>
-          <div class="file-info">
-            <div class="file-name">${escHtml(f.name)}</div>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-        </div>`;
+      html += `<div class="file-item" onclick="loadFolder('${f.id}', '${escHtml(f.name)}')"><div class="file-icon folder">📁</div><div class="file-info"><div class="file-name">${escHtml(f.name)}</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>`;
     });
     html += '</div>';
   }
-
   if (jsons.length > 0) {
     html += '<div class="file-list">';
-    if (folders.length > 0) html += '<p style="font-size:0.72rem;color:var(--text2);padding:8px 0 4px;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-left:0">Arquivos JSON</p>';
-    html += `<div style="display:flex;gap:8px;padding:4px 0 8px;">
-      <button class="btn btn-secondary" style="font-size:0.78rem;padding:6px 14px" onclick="selectAllInFolder(${JSON.stringify(jsons).replace(/"/g, '&quot;')}, '${currentFolderId}')">Selecionar todos</button>
-      <button class="btn btn-secondary" style="font-size:0.78rem;padding:6px 14px" onclick="deselectAllInFolder(${JSON.stringify(jsons.map(f=>f.id)).replace(/"/g, '&quot;')})">Desmarcar todos</button>
-    </div>`;
+    html += `<div style="display:flex;gap:8px;padding:4px 0 8px;"><button class="btn btn-secondary" style="font-size:0.78rem;padding:6px 14px" onclick="selectAllInFolder(${JSON.stringify(jsons).replace(/"/g, '&quot;')}, '${currentFolderId}')">Selecionar todos</button><button class="btn btn-secondary" style="font-size:0.78rem;padding:6px 14px" onclick="deselectAllInFolder(${JSON.stringify(jsons.map(f=>f.id)).replace(/"/g, '&quot;')})">Desmarcar todos</button></div>`;
     jsons.forEach(f => {
       const checked = selectedFiles[f.id] ? 'checked' : '';
-      html += `
-        <div class="file-item" onclick="toggleFile('${f.id}', '${escHtml(f.name)}', '${currentFolderId}')">
-          <div class="file-icon json">📄</div>
-          <div class="file-info">
-            <div class="file-name">${escHtml(f.name)}</div>
-          </div>
-          <div class="file-check ${checked}" id="check-${f.id}"></div>
-        </div>`;
+      html += `<div class="file-item" onclick="toggleFile('${f.id}', '${escHtml(f.name)}', '${currentFolderId}')"><div class="file-icon json">📄</div><div class="file-info"><div class="file-name">${escHtml(f.name)}</div></div><div class="file-check ${checked}" id="check-${f.id}"></div></div>`;
     });
     html += '</div>';
   }
-
-  container.innerHTML = html;
-  updateSelectedCount();
+  container.innerHTML = html; updateSelectedCount();
 }
 
 function toggleFile(fileId, fileName, folderId) {
-  if (selectedFiles[fileId]) {
-    delete selectedFiles[fileId];
-  } else {
-    selectedFiles[fileId] = { id: fileId, name: fileName, folderId };
-  }
+  if (selectedFiles[fileId]) delete selectedFiles[fileId];
+  else selectedFiles[fileId] = { id: fileId, name: fileName, folderId };
   cacheValid = false;
   const chk = document.getElementById(`check-${fileId}`);
   if (chk) chk.className = `file-check ${selectedFiles[fileId] ? 'checked' : ''}`;
   updateSelectedCount();
 }
-
 function selectAllInFolder(files, folderId) {
-  files.forEach(f => {
-    selectedFiles[f.id] = { id: f.id, name: f.name, folderId };
-    const chk = document.getElementById(`check-${f.id}`);
-    if (chk) chk.className = 'file-check checked';
-  });
+  files.forEach(f => { selectedFiles[f.id] = { id: f.id, name: f.name, folderId }; const chk = document.getElementById(`check-${f.id}`); if (chk) chk.className = 'file-check checked'; });
   updateSelectedCount();
 }
-
 function deselectAllInFolder(fileIds) {
-  fileIds.forEach(id => {
-    delete selectedFiles[id];
-    const chk = document.getElementById(`check-${id}`);
-    if (chk) chk.className = 'file-check';
-  });
+  fileIds.forEach(id => { delete selectedFiles[id]; const chk = document.getElementById(`check-${id}`); if (chk) chk.className = 'file-check'; });
   updateSelectedCount();
 }
-
 function updateSelectedCount() {
   const n = Object.keys(selectedFiles).length;
-  const el = document.getElementById('selected-count');
-  const btn = document.getElementById('btn-start-session');
-  el.innerHTML = n === 0 ? 'Nenhum arquivo selecionado' : `<strong>${n}</strong> arquivo${n>1?'s':''} selecionado${n>1?'s':''}`;
-  btn.disabled = n === 0;
+  document.getElementById('selected-count').innerHTML = n === 0 ? 'Nenhum arquivo' : `<strong>${n}</strong> selecionado(s)`;
+  document.getElementById('btn-start-session').disabled = n === 0;
 }
 
-// ═══════════════════════════════════════════════════════
-// FILTROS E CONSTRUÇÃO DE QUEUE SRS
-// ═══════════════════════════════════════════════════════
 async function showFilters() {
   showScreen('screen-filters');
-  const statsEl = document.getElementById('stats-preview');
-  statsEl.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando questões...</div>';
-
+  document.getElementById('stats-preview').innerHTML = '<div class="loading"><div class="spinner"></div>Carregando questões...</div>';
   if (!cacheValid) {
     allLoadedQuestions = [];
     const fileIds = Object.keys(selectedFiles);
-
     const results = await Promise.all(fileIds.map(async (fid) => {
       try {
         const data = await readJsonFile(fid);
-        if (Array.isArray(data)) {
-          data.forEach(q => { q._fileId = fid; q._fileName = selectedFiles[fid].name; });
-          jsonCache[fid] = data;
-          return data;
-        }
-      } catch (e) {
-        showToast(`⚠️ Erro ao ler ${selectedFiles[fid]?.name || 'arquivo'}`);
-      }
-      return [];
+        if (Array.isArray(data)) { data.forEach(q => { q._fileId = fid; q._fileName = selectedFiles[fid].name; }); jsonCache[fid] = data; return data; }
+      } catch (e) { showToast(`⚠️ Erro em ${selectedFiles[fid]?.name}`); } return [];
     }));
-
     results.forEach(data => allLoadedQuestions.push(...data));
     cacheValid = true;
   }
-
   const unique = (arr) => [...new Set(arr.filter(Boolean))].sort();
-
   const areas = unique(allLoadedQuestions.map(q => q.grande_area));
-  const areaEl = document.getElementById('filter-area');
-  areaEl.innerHTML = '<option>Todas as Áreas</option>' + areas.map(a => `<option>${escHtml(a)}</option>`).join('');
-
+  document.getElementById('filter-area').innerHTML = '<option>Todas as Áreas</option>' + areas.map(a => `<option>${escHtml(a)}</option>`).join('');
   const niveis = unique(allLoadedQuestions.map(q => q.nivel_dificuldade));
-  const nivelEl = document.getElementById('filter-nivel');
-  nivelEl.innerHTML = '<option>Todos os Níveis</option>' + niveis.map(n => `<option>${escHtml(n)}</option>`).join('');
-
+  document.getElementById('filter-nivel').innerHTML = '<option>Todos os Níveis</option>' + niveis.map(n => `<option>${escHtml(n)}</option>`).join('');
   updateSubArea();
-  renderStatsPreview(allLoadedQuestions);
-  statsEl.style.display = 'block';
+  document.getElementById('stats-preview').style.display = 'block';
 }
 
 function updateSubArea() {
   const area = document.getElementById('filter-area').value;
-  const filtered = area === 'Todas as Áreas'
-    ? allLoadedQuestions
-    : allLoadedQuestions.filter(q => q.grande_area === area);
+  const filtered = area === 'Todas as Áreas' ? allLoadedQuestions : allLoadedQuestions.filter(q => q.grande_area === area);
   const subareas = [...new Set(filtered.map(q => q.sub_area).filter(Boolean))].sort();
-  const el = document.getElementById('filter-subarea');
-  el.innerHTML = '<option>Todas as Subáreas</option>' + subareas.map(s => `<option>${escHtml(s)}</option>`).join('');
+  document.getElementById('filter-subarea').innerHTML = '<option>Todas as Subáreas</option>' + subareas.map(s => `<option>${escHtml(s)}</option>`).join('');
   renderStatsPreview(getFilteredQuestions());
 }
 
 function getFilteredQuestions() {
   let q = allLoadedQuestions;
-  const area = document.getElementById('filter-area').value;
-  const sub = document.getElementById('filter-subarea').value;
-  const nivel = document.getElementById('filter-nivel').value;
-  const tags = document.getElementById('filter-tags').value.trim().toLowerCase();
+  const area = document.getElementById('filter-area').value, sub = document.getElementById('filter-subarea').value, nivel = document.getElementById('filter-nivel').value, tags = document.getElementById('filter-tags').value.trim().toLowerCase();
   if (area !== 'Todas as Áreas') q = q.filter(x => x.grande_area === area);
   if (sub !== 'Todas as Subáreas') q = q.filter(x => x.sub_area === sub);
   if (nivel !== 'Todos os Níveis') q = q.filter(x => x.nivel_dificuldade === nivel);
@@ -1295,790 +844,496 @@ function getFilteredQuestions() {
   return q;
 }
 
-function calcStats(questions) {
-  const hoje = isoToday();
-  const s = { novas: 0, erradas: 0, hoje: 0, futuras: 0 };
-  questions.forEach(q => {
-    const data = q.proxima_revisao;
-    const streak = q.streak || 0;
-    if (!data) s.novas++;
-    else if (data <= hoje) streak === 0 ? s.erradas++ : s.hoje++;
-    else s.futuras++;
-  });
-  return s;
-}
-
-function renderStatsPreview(questions) {
-  const s = calcStats(questions);
-  const total = questions.length;
-  const el = document.getElementById('stats-preview');
-  el.innerHTML = `
-    <h3 class="section-title">Estatísticas (${total} questões)</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center">
-        <div style="font-size:1.4rem;font-weight:700;color:var(--orange)">${s.erradas}</div>
-        <div style="font-size:0.72rem;color:var(--text2)">🔙 Erradas</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center">
-        <div style="font-size:1.4rem;font-weight:700;color:var(--green)">${s.novas}</div>
-        <div style="font-size:0.72rem;color:var(--text2)">🌱 Novas</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center">
-        <div style="font-size:1.4rem;font-weight:700;color:var(--red)">${s.hoje}</div>
-        <div style="font-size:0.72rem;color:var(--text2)">⚠️ Para Hoje</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center">
-        <div style="font-size:1.4rem;font-weight:700;color:var(--text2)">${s.futuras}</div>
-        <div style="font-size:0.72rem;color:var(--text2)">📅 Agendadas</div>
-      </div>
-    </div>`;
-}
-
 function buildQueue(questions) {
   const hoje = isoToday();
   const erradas=[], novas=[], atrasadas=[], paraHoje=[];
-
   questions.forEach(q => {
-    const data = q.proxima_revisao;
-    const streak = q.streak || 0;
+    const data = q.proxima_revisao, streak = q.streak || 0;
     if (!data) novas.push(q);
-    else if (data <= hoje) {
-      if (streak === 0) erradas.push(q);
-      else if (data < hoje) atrasadas.push(q);
-      else paraHoje.push(q);
-    }
+    else if (data <= hoje) { if (streak === 0) erradas.push(q); else if (data < hoje) atrasadas.push(q); else paraHoje.push(q); }
   });
-
   shuffle(erradas); shuffle(novas);
-
-  function sortAndShuffleByDate(lista) {
-    const grupos = {};
-    lista.forEach(q => {
-      const data = q.proxima_revisao;
-      if (!grupos[data]) grupos[data] = [];
-      grupos[data].push(q);
-    });
-    return Object.keys(grupos).sort().flatMap(data => shuffle(grupos[data]));
-  }
-
-  const atrasadasOrdenadas = sortAndShuffleByDate(atrasadas);
-  const paraHojeOrdenadas  = sortAndShuffleByDate(paraHoje);
-  const revisoes           = [...erradas, ...atrasadasOrdenadas, ...paraHojeOrdenadas];
-
-  const hojeData      = historicoData[hoje] || {};
+  function sortAndShuffle(lista) { const g={}; lista.forEach(q=>{ const d=q.proxima_revisao; if(!g[d])g[d]=[]; g[d].push(q); }); return Object.keys(g).sort().flatMap(d=>shuffle(g[d])); }
+  const revisoes = [...erradas, ...sortAndShuffle(atrasadas), ...sortAndShuffle(paraHoje)];
+  const hojeData = historicoData[hoje] || {};
   const metaFeitaHoje = hojeData.meta || 0;
-  const metaRevBatida = metaFeitaHoje >= metaDiaria;
-
-  const novasParaHoje  = novas.slice(0, metaNovas);
-  const novasRestantes = novas.slice(metaNovas);
-
-  if (metaRevBatida) {
-    return [...novasParaHoje, ...revisoes, ...novasRestantes];
-  } else {
-    const faltam = Math.max(0, metaDiaria - metaFeitaHoje);
-    const revisoesPrioritarias = revisoes.slice(0, faltam);
-    const revisoesRestantes    = revisoes.slice(faltam);
-    return [...revisoesPrioritarias, ...novasParaHoje, ...revisoesRestantes, ...novasRestantes];
-  }
+  if (metaFeitaHoje >= metaDiaria) return [...novas.slice(0, metaNovas), ...revisoes, ...novas.slice(metaNovas)];
+  const faltam = Math.max(0, metaDiaria - metaFeitaHoje);
+  return [...revisoes.slice(0, faltam), ...novas.slice(0, metaNovas), ...revisoes.slice(faltam), ...novas.slice(metaNovas)];
 }
 
-// ═══════════════════════════════════════════════════════
-// EXECUÇÃO DO QUIZ E LÓGICA DE JOGO
-// ═══════════════════════════════════════════════════════
 function startQuiz() {
   sessionQuestions = getFilteredQuestions();
   if (sessionQuestions.length === 0) { showToast('❌ Nenhuma questão com esses filtros'); return; }
-
   srsMode = document.getElementById('toggle-srs').checked;
   quizQueue = srsMode ? buildQueue(sessionQuestions) : shuffle([...sessionQuestions]);
-
-  if (quizQueue.length === 0) { showToast('✅ Nenhuma questão pendente hoje!'); return; }
-
-  currentIndex = 0;
-  sessionCorrect = 0;
-  sessionTotal = 0;
-  sessionErrors = [];
-
-  showScreen('screen-quiz');
-  renderQuestion();
+  if (quizQueue.length === 0) { showToast('✅ Nenhuma questão pendente!'); return; }
+  currentIndex = 0; sessionCorrect = 0; sessionTotal = 0; sessionErrors = [];
+  showScreen('screen-quiz'); renderQuestion();
 }
 
-async function searchImageOnDrive(filename) {
-  const q = `name='${filename}' and trashed=false and mimeType contains 'image/'`;
-  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=5`;
-  const data = await driveGet(url);
-  if (data.files && data.files.length > 0) return data.files[0].id;
-  return null;
-}
-
-async function loadImageAsBlob(fileId) {
-  const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-    headers: { Authorization: `Bearer ${accessToken}` }
-  });
-  if (!r.ok) throw new Error('Erro ao baixar imagem');
-  const blob = await r.blob();
-  return URL.createObjectURL(blob);
-}
-
+// RESTO DA LÓGICA DO QUIZ
 async function renderQuestion() {
   if (currentIndex >= quizQueue.length) { finishSession(); return; }
-
   const q = quizQueue[currentIndex];
-  const hoje = isoToday();
-  const streak = q.streak || 0;
-  const data = q.proxima_revisao;
-
-  const s = calcStats(sessionQuestions);
-  document.getElementById('hud').innerHTML = `
-    <span class="hud-chip erradas">🔙 ${s.erradas}</span>
-    <span class="hud-chip novas">🌱 ${s.novas}</span>
-    <span class="hud-chip hoje">⚠️ ${s.hoje}</span>
-    <span class="hud-chip futuras">📅 ${s.futuras}</span>`;
-
-  const pct = Math.round((currentIndex / quizQueue.length) * 100);
+  const stats = {novas:0, erradas:0, hoje:0, futuras:0}, hojeStr = isoToday();
+  sessionQuestions.forEach(c => {
+    if (!c.proxima_revisao) stats.novas++;
+    else if (c.proxima_revisao <= hojeStr) (c.streak||0)===0 ? stats.erradas++ : stats.hoje++;
+    else stats.futuras++;
+  });
+  document.getElementById('hud').innerHTML = `<span class="hud-chip erradas">🔙 ${stats.erradas}</span><span class="hud-chip novas">🌱 ${stats.novas}</span><span class="hud-chip hoje">⚠️ ${stats.hoje}</span><span class="hud-chip futuras">📅 ${stats.futuras}</span>`;
   document.getElementById('progress-text').textContent = `${currentIndex+1}/${quizQueue.length}`;
-  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-fill').style.width = Math.round((currentIndex / quizQueue.length) * 100) + '%';
   document.getElementById('score-text').textContent = `${sessionCorrect}✓`;
-
-  const _metaFeitas = (historicoData[isoToday()] && historicoData[isoToday()].meta) || 0;
-  const _metaPct = Math.min(100, Math.round((_metaFeitas / metaDiaria) * 100));
-  const _metaEl = document.getElementById('meta-progress-fill');
-  const _metaTxt = document.getElementById('meta-progress-text');
-  if (_metaEl) _metaEl.style.width = _metaPct + '%';
-  if (_metaTxt) {
-    const _metaRevBatida = _metaFeitas >= metaDiaria;
-    if (_metaRevBatida) {
-      const _novasFeitas = (historicoData[isoToday()] && historicoData[isoToday()].novas) || 0;
-      const _novasPct = Math.min(100, Math.round((_novasFeitas / metaNovas) * 100));
-      if (_metaEl) { _metaEl.style.width = _novasPct + '%'; _metaEl.style.background = 'linear-gradient(90deg, var(--accent2), var(--accent))'; }
-      _metaTxt.textContent = '🌱 Novas: ' + _novasFeitas + '/' + metaNovas;
-    } else {
-      if (_metaEl) _metaEl.style.background = 'linear-gradient(90deg, var(--green), var(--accent))';
-      _metaTxt.textContent = '🔁 Rev: ' + _metaFeitas + '/' + metaDiaria;
-    }
+  
+  const mFeitas = (historicoData[hojeStr]?.meta) || 0, mPct = Math.min(100, Math.round((mFeitas/metaDiaria)*100));
+  if (mFeitas >= metaDiaria) {
+      const nF = (historicoData[hojeStr]?.novas)||0;
+      document.getElementById('meta-progress-fill').style.width = Math.min(100, Math.round((nF/metaNovas)*100)) + '%';
+      document.getElementById('meta-progress-fill').style.background = 'linear-gradient(90deg, var(--accent2), var(--accent))';
+      document.getElementById('meta-progress-text').textContent = '🌱 Novas: ' + nF + '/' + metaNovas;
+  } else {
+      document.getElementById('meta-progress-fill').style.width = mPct + '%';
+      document.getElementById('meta-progress-fill').style.background = 'linear-gradient(90deg, var(--green), var(--accent))';
+      document.getElementById('meta-progress-text').textContent = '🔁 Rev: ' + mFeitas + '/' + metaDiaria;
   }
 
-  let badgeClass = 'nova', badgeText = '🌱 Nova';
-  if (data) {
-    if (streak === 0) { badgeClass = 'erro'; badgeText = `🔙 Erro recente · 🔥${streak}`; }
-    else { badgeClass = 'revisao'; badgeText = `📅 Revisão ${data} · 🔥${streak}`; }
-  }
+  let bClass = 'nova', bText = '🌱 Nova';
+  if (q.proxima_revisao) { if ((q.streak||0)===0) { bClass='erro'; bText=`🔙 Erro recente · 🔥${q.streak||0}`; } else { bClass='revisao'; bText=`📅 Revisão ${q.proxima_revisao} · 🔥${q.streak}`; } }
+  
+  const opsHtml = shuffle([...q.opcoes]).map(op => `<button class="option-btn" onclick="checkAnswer(this, '${escStr(op)}')">${escHtml(op)}</button>`).join('');
+  document.getElementById('quiz-body').innerHTML = `<span class="streak-badge ${bClass}">${bText}</span><div class="question-text">${q.pergunta.replace(/\n/g,'<br>')}</div><div id="image-container"></div><div class="options">${opsHtml}</div><div class="feedback-box" id="feedback-box"></div>`;
+  document.getElementById('quiz-actions').innerHTML = `<button class="btn btn-danger" style="flex:1" onclick="finishSession()">Encerrar</button><button class="btn btn-primary" style="flex:2;display:none" id="btn-next" onclick="nextQuestion()">Próxima →</button>`;
 
-  const ops = shuffle([...q.opcoes]);
-  const optsHtml = ops.map(op => `
-    <button class="option-btn" onclick="checkAnswer(this, '${escStr(op)}')">${escHtml(op)}</button>
-  `).join('');
-
-  document.getElementById('quiz-body').innerHTML = `
-    <span class="streak-badge ${badgeClass}">${badgeText}</span>
-    <div class="question-text">${q.pergunta.replace(/\n/g,'<br>')}</div>
-    <div id="image-container"></div>
-    <div class="options">${optsHtml}</div>
-    <div class="feedback-box" id="feedback-box"></div>`;
-
-  document.getElementById('quiz-actions').innerHTML = `
-    <button class="btn btn-danger" style="flex:1" onclick="finishSession()">Encerrar</button>
-    <button class="btn btn-primary" style="flex:2;display:none" id="btn-next" onclick="nextQuestion()">Próxima →</button>`;
-
-  const imagens = q.imagens || [];
-  if (imagens.length > 0) {
-    const container = document.getElementById('image-container');
-    container.innerHTML = '<div class="loading" style="padding:16px"><div class="spinner"></div>Carregando imagem...</div>';
-    
-    const imgWrapper = document.createElement('div');
-
-    for (const caminho of imagens) {
-      const nomeArquivo = caminho.split('/').pop();
+  if (q.imagens && q.imagens.length > 0) {
+    const c = document.getElementById('image-container'); c.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando imagem...</div>';
+    const w = document.createElement('div');
+    for (const path of q.imagens) {
+      const nome = path.split('/').pop();
       try {
-        if (!imageCache[nomeArquivo]) {
-          const fileId = await searchImageOnDrive(nomeArquivo);
-          if (fileId) {
-            imageCache[nomeArquivo] = await loadImageAsBlob(fileId);
+        if (!imageCache[nome]) {
+          const u = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`name='${nome}' and trashed=false`)}&fields=files(id)`;
+          const d = await driveGet(u);
+          if (d.files[0]) {
+            const rb = await fetch(`https://www.googleapis.com/drive/v3/files/${d.files[0].id}?alt=media`,{headers:{Authorization:`Bearer ${accessToken}`}});
+            imageCache[nome] = URL.createObjectURL(await rb.blob());
           }
         }
-
-        if (imageCache[nomeArquivo]) {
-          const img = document.createElement('img');
-          img.src = imageCache[nomeArquivo];
-          img.style.cssText = 'max-width:100%;border-radius:8px;margin:12px 0;display:block;';
-          imgWrapper.appendChild(img);
-        } else {
-          imgWrapper.innerHTML += `<div style="color:var(--text2);font-size:0.8rem;padding:8px">⚠️ Imagem não encontrada: ${escHtml(nomeArquivo)}</div>`;
-        }
-      } catch(e) {
-        imgWrapper.innerHTML += `<div style="color:var(--red);font-size:0.8rem;padding:8px">❌ Erro ao carregar imagem</div>`;
-      }
+        if (imageCache[nome]) w.innerHTML += `<img src="${imageCache[nome]}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;">`;
+      } catch(e) {}
     }
-    container.innerHTML = '';
-    container.appendChild(imgWrapper);
+    c.innerHTML = ''; c.appendChild(w);
   }
 }
 
 async function checkAnswer(btn, resposta) {
-  const q = quizQueue[currentIndex];
-  const acertou = resposta === q.resposta_correta;
-  sessionTotal++;
+  const q = quizQueue[currentIndex]; const acertou = resposta === q.resposta_correta; sessionTotal++;
+  document.querySelectorAll('.option-btn').forEach(b => { b.disabled = true; if (b.textContent.trim() === q.resposta_correta) b.classList.add('correct'); });
+  btn.classList.add(acertou ? 'correct' : 'wrong');
+  if (acertou) sessionCorrect++; else sessionErrors.push(q);
 
-  document.querySelectorAll('.option-btn').forEach(b => {
-    b.disabled = true;
-    if (b.textContent.trim() === q.resposta_correta) b.classList.add('correct');
-  });
-  if (!acertou) btn.classList.add('wrong');
-  else btn.classList.add('correct');
-
-  if (acertou) sessionCorrect++;
-  else sessionErrors.push(q);
-
-  const hoje = getBrazilDate();
-  const hojeIso = toLocalISOString(hoje);
-  let msgRev = '';
-
+  const hojeIso = isoToday(); let msgRev = '';
   if (srsMode) {
-    const eraErradaAnterior = (q.streak === 0) && !!q.proxima_revisao;
-    const eraNova = !q.proxima_revisao; 
-
+    const eraErrada = (q.streak === 0) && !!q.proxima_revisao; const eraNova = !q.proxima_revisao;
     if (acertou) {
-      const streak = (q.streak || 0) + 1;
-      const dias = {1:1,2:3,3:7,4:15,5:30}[streak] || 45;
-      q.streak = streak;
-      q.proxima_revisao = addDays(hojeIso, dias);
-      msgRev = `Próxima revisão em ${dias} dia${dias>1?'s':''} · ${q.proxima_revisao}`;
+      q.streak = (q.streak || 0) + 1; const dias = {1:1,2:3,3:7,4:15,5:30}[q.streak] || 45;
+      q.proxima_revisao = addDays(hojeIso, dias); msgRev = `Próxima revisão em ${dias} dia(s)`;
     } else {
-      q.streak = 0;
-      q.proxima_revisao = addDays(hojeIso, 1);
-      msgRev = `Agendada para amanhã · ${q.proxima_revisao}`;
+      q.streak = 0; q.proxima_revisao = addDays(hojeIso, 1); msgRev = `Agendada para amanhã`;
     }
-    q.respondida = true;
-    q.acertou_ultima_vez = acertou;
-    q.data_resposta = hoje.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-
-    registrarNoHistorico(acertou, eraErradaAnterior, eraNova);
+    q.respondida = true; q.acertou_ultima_vez = acertou; q.data_resposta = getBrazilDate().toLocaleString();
+    if (!historicoData[hojeIso]) historicoData[hojeIso] = { respondidas:0, acertos:0, erros:0 };
+    historicoData[hojeIso].respondidas++; acertou ? historicoData[hojeIso].acertos++ : historicoData[hojeIso].erros++;
+    if (!eraErrada && acertou) historicoData[hojeIso].meta = (historicoData[hojeIso].meta||0) + 1;
+    if (eraNova) historicoData[hojeIso].novas = (historicoData[hojeIso].novas||0) + 1;
+    if (historicoData[hojeIso].respondidas % 5 === 0) salvarHistorico();
     saveProgress(q);
   }
-
-  const explicacaoOpcao = (q.explicacoes_opcoes && q.explicacoes_opcoes[resposta]) ? q.explicacoes_opcoes[resposta] : '';
-  const explicacaoGeral = q.explicacao || '';
-  let explicacaoHtml = '';
-  if (explicacaoOpcao) {
-    explicacaoHtml += `<div class="feedback-explanation" style="margin-bottom:8px"><b>Sua escolha:</b> ${explicacaoOpcao.replace(/\n/g,'<br>')}</div>`;
-  }
-  if (explicacaoGeral) {
-    explicacaoHtml += `<div class="feedback-explanation"><b>💡 Explicação:</b> ${explicacaoGeral.replace(/\n/g,'<br>')}</div>`;
-  }
-  const fb = document.getElementById('feedback-box');
-  fb.classList.add('show');
-  fb.innerHTML = `${explicacaoHtml}${srsMode ? `<div class="feedback-schedule">📅 ${msgRev}</div>` : '<div class="feedback-schedule">🚫 Modo Livre: progresso não salvo</div>'}`;
-
-  document.getElementById('btn-next').style.display = 'block';
-  document.getElementById('score-text').textContent = `${sessionCorrect}✓`;
+  const expO = (q.explicacoes_opcoes && q.explicacoes_opcoes[resposta]) ? `<div class="feedback-explanation"><b>Sua escolha:</b> ${q.explicacoes_opcoes[resposta].replace(/\n/g,'<br>')}</div>` : '';
+  const expG = q.explicacao ? `<div class="feedback-explanation"><b>💡 Explicação:</b> ${q.explicacao.replace(/\n/g,'<br>')}</div>` : '';
+  const fb = document.getElementById('feedback-box'); fb.classList.add('show');
+  fb.innerHTML = `${expO}${expG}<div class="feedback-schedule">📅 ${srsMode ? msgRev : 'Modo Livre'}</div>`;
+  document.getElementById('btn-next').style.display = 'block'; document.getElementById('score-text').textContent = `${sessionCorrect}✓`;
 }
 
-function nextQuestion() {
-  currentIndex++;
-  window.scrollTo(0, 0);
-  renderQuestion();
-}
-
-function continuarSemSalvar() {
-  erroConexaoExibido = true;
-  document.getElementById('modal-offline').classList.add('hidden');
-}
-
-function voltarAoMenu() {
-  document.getElementById('modal-offline').classList.add('hidden');
-  erroConexaoExibido = false;
-  showScreen('screen-browser');
-}
+function nextQuestion() { currentIndex++; window.scrollTo(0, 0); renderQuestion(); }
+function continuarSemSalvar() { erroConexaoExibido = true; document.getElementById('modal-offline').classList.add('hidden'); }
+function voltarAoMenu() { document.getElementById('modal-offline').classList.add('hidden'); erroConexaoExibido = false; showScreen('screen-browser'); }
 
 async function saveProgress(q) {
   if (erroConexaoExibido) return;
   try {
-    const fileId = q._fileId;
-    if (!fileId) return;
-
-    if (jsonCache[fileId]) {
-      const idx = jsonCache[fileId].findIndex(x => x.id === q.id);
-      if (idx >= 0) {
-        jsonCache[fileId][idx].respondida = q.respondida;
-        jsonCache[fileId][idx].acertou_ultima_vez = q.acertou_ultima_vez;
-        jsonCache[fileId][idx].streak = q.streak;
-        jsonCache[fileId][idx].proxima_revisao = q.proxima_revisao;
-        jsonCache[fileId][idx].data_resposta = q.data_resposta;
-      }
-      const dadosParaSalvar = jsonCache[fileId].map(function(q) {
-        const copia = Object.assign({}, q);
-        delete copia._fileId;
-        delete copia._fileName;
-        return copia;
-      });
-      await driveUpdate(fileId, dadosParaSalvar);
-    } else {
-      const data = await readJsonFile(fileId);
-      const idx = data.findIndex(x => x.id === q.id);
-      if (idx >= 0) {
-        data[idx].respondida = q.respondida;
-        data[idx].acertou_ultima_vez = q.acertou_ultima_vez;
-        data[idx].streak = q.streak;
-        data[idx].proxima_revisao = q.proxima_revisao;
-        data[idx].data_resposta = q.data_resposta;
-        await driveUpdate(fileId, data);
-      }
+    if (jsonCache[q._fileId]) {
+      const idx = jsonCache[q._fileId].findIndex(x => x.id === q.id);
+      if (idx >= 0) Object.assign(jsonCache[q._fileId][idx], { respondida:q.respondida, acertou_ultima_vez:q.acertou_ultima_vez, streak:q.streak, proxima_revisao:q.proxima_revisao, data_resposta:q.data_resposta });
+      await driveUpdate(q._fileId, jsonCache[q._fileId].map(x=>{const c={...x}; delete c._fileId; delete c._fileName; return c;}));
     }
-  } catch (e) {
-    console.error('Save error:', e);
-    if (!erroConexaoExibido && e.message !== "Sessão expirada") {
-      document.getElementById('modal-offline').classList.remove('hidden');
-    }
-  }
+  } catch(e) { if (!erroConexaoExibido && e.message !== "Sessão expirada") document.getElementById('modal-offline').classList.remove('hidden'); }
 }
 
 function finishSession() {
-  salvarHistorico(); 
-  showScreen('screen-results');
-  const pct = sessionTotal > 0 ? Math.round((sessionCorrect/sessionTotal)*100) : 0;
-  document.getElementById('results-score').textContent = pct + '%';
-  document.getElementById('results-label').textContent =
-    `${sessionCorrect} acertos de ${sessionTotal} questões respondidas`;
-
+  salvarHistorico(); showScreen('screen-results');
+  document.getElementById('results-score').textContent = (sessionTotal>0?Math.round((sessionCorrect/sessionTotal)*100):0) + '%';
+  document.getElementById('results-label').textContent = `${sessionCorrect} acertos de ${sessionTotal} questões`;
   let errHtml = '';
   if (sessionErrors.length > 0) {
-    errHtml = `<h3 class="section-title" style="margin-top:0">🔻 Revisão de Erros</h3>`;
-    sessionErrors.forEach((q, i) => {
-      errHtml += `
-        <div class="error-card">
-          <div class="error-q">${i+1}. ${q.pergunta.replace(/\n/g,'<br>')}</div>
-          <div class="error-answer">✅ ${q.resposta_correta}</div>
-          <div class="error-expl">${(q.explicacao||'').replace(/\n/g,'<br>')}</div>
-        </div>`;
-    });
-  } else if (sessionTotal > 0) {
-    errHtml = `<div style="text-align:center;padding:32px;color:var(--green);font-size:1rem">✨ Nenhum erro nesta sessão!</div>`;
-  }
+    errHtml = `<h3 class="section-title">🔻 Revisão de Erros</h3>` + sessionErrors.map((q,i) => `<div class="error-card"><div class="error-q">${i+1}. ${q.pergunta.replace(/\n/g,'<br>')}</div><div class="error-answer">✅ ${q.resposta_correta}</div><div class="error-expl">${(q.explicacao||'').replace(/\n/g,'<br>')}</div></div>`).join('');
+  } else if (sessionTotal > 0) errHtml = `<div style="text-align:center;padding:32px;color:var(--green)">✨ Nenhum erro nesta sessão!</div>`;
   document.getElementById('results-errors').innerHTML = errHtml;
 }
 
-// ═══════════════════════════════════════════════════════
-// HISTÓRICO E ESTATÍSTICAS
-// ═══════════════════════════════════════════════════════
 async function carregarHistorico() {
   try {
-    const q = "name='" + HISTORICO_FILENAME + "' and 'root' in parents and trashed=false";
-    const url = 'https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=files(id,name)';
-    const data = await driveGet(url);
-    if (data.files && data.files.length > 0) {
-      historicoFileId = data.files[0].id;
-      historicoData = await readJsonFile(historicoFileId);
-    } else {
-      historicoData = {};
-      historicoFileId = await criarArquivoHistorico();
+    const d = await driveGet(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`name='${HISTORICO_FILENAME}' and 'root' in parents and trashed=false`)}&fields=files(id)`);
+    if (d.files[0]) { historicoFileId = d.files[0].id; historicoData = await readJsonFile(historicoFileId); }
+    else {
+      const form = new FormData(); form.append('metadata', new Blob([JSON.stringify({name:HISTORICO_FILENAME,mimeType:'application/json',parents:['root']})],{type:'application/json'})); form.append('file', new Blob(['{}'],{type:'application/json'}));
+      const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method:'POST', headers:{Authorization:'Bearer '+accessToken}, body:form });
+      historicoFileId = (await r.json()).id; historicoData = {};
     }
-  } catch(e) {
-    console.error('Erro ao carregar histórico:', e);
-    historicoData = {};
-  }
+  } catch(e) { historicoData = {}; }
 }
+async function salvarHistorico() { if(historicoFileId && !erroConexaoExibido) try{await driveUpdate(historicoFileId, historicoData);}catch(e){} }
 
-async function criarArquivoHistorico() {
-  try {
-    const metadata = { name: HISTORICO_FILENAME, mimeType: 'application/json', parents: ['root'] };
-    const blob = new Blob([JSON.stringify({})], { type: 'application/json' });
-    const form = new FormData();
-    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    form.append('file', blob);
-    const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + accessToken },
-      body: form
-    });
-    const result = await r.json();
-    return result.id;
-  } catch(e) {
-    console.error('Erro ao criar histórico:', e);
-    return null;
-  }
-}
-
-async function salvarHistorico() {
-  if (!historicoFileId || erroConexaoExibido) return;
-  try {
-    await driveUpdate(historicoFileId, historicoData);
-  } catch(e) {
-    console.error('Erro ao salvar histórico:', e);
-  }
-}
-
-function registrarNoHistorico(acertou, eraErradaAnterior, eraNova) {
-  const hoje = isoToday();
-  if (!historicoData[hoje]) {
-    historicoData[hoje] = { respondidas: 0, acertos: 0, erros: 0 };
-  }
-  historicoData[hoje].respondidas++;
-  if (acertou) historicoData[hoje].acertos++;
-  else historicoData[hoje].erros++;
-
-  if (!eraErradaAnterior && acertou) {
-    if (!historicoData[hoje].meta) historicoData[hoje].meta = 0;
-    historicoData[hoje].meta++;
-  }
-
-  if (eraNova === true) {
-    if (!historicoData[hoje].novas) historicoData[hoje].novas = 0;
-    historicoData[hoje].novas++;
-  }
-
-  if (historicoData[hoje].respondidas % 5 === 0) salvarHistorico();
-}
+// ══════════════════════════════════════════════════════════════
+// ENGINE ANALYTICS E SIMULADOR PREDITIVO
+// ══════════════════════════════════════════════════════════════
 
 async function showStats() {
   showScreen('screen-stats');
   const el = document.getElementById('stats-content');
-  el.innerHTML = '<div class="loading"><div class="spinner"></div>Calculando...</div>';
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>Calculando Análise Preditiva...</div>';
 
-  if (Object.keys(historicoData).length === 0 && historicoFileId === null) {
-    await carregarHistorico();
-  }
-
+  if (Object.keys(historicoData).length === 0 && !historicoFileId) await carregarHistorico();
   if (Object.keys(selectedFiles).length === 0) {
-    el.innerHTML = '<div class="empty-state" style="padding:48px 24px"><div class="icon">📂</div><p>Selecione arquivos na tela principal primeiro para ver as estatísticas.</p></div>';
-    return;
+    el.innerHTML = '<div class="empty-state" style="padding:48px 24px"><div class="icon">📂</div><p>Selecione arquivos na tela principal para analisar.</p></div>'; return;
   }
 
   let todasQuestoes = [];
-  if (cacheValid && allLoadedQuestions.length > 0) {
-    todasQuestoes = allLoadedQuestions;
-  } else {
-    const fileIds = Object.keys(selectedFiles);
-    const results = await Promise.all(fileIds.map(async (fid) => {
-      try {
-        const data = await readJsonFile(fid);
-        if (Array.isArray(data)) {
-          data.forEach(q => { q._fileId = fid; q._fileName = selectedFiles[fid].name; });
-          jsonCache[fid] = data;
-          return data;
-        }
-      } catch(e) {}
-      return [];
+  if (cacheValid && allLoadedQuestions.length > 0) todasQuestoes = allLoadedQuestions;
+  else {
+    const results = await Promise.all(Object.keys(selectedFiles).map(async (fid) => {
+      try { const data = await readJsonFile(fid); if(Array.isArray(data)){ data.forEach(q=>{q._fileId=fid;}); jsonCache[fid]=data; return data;} }catch(e){} return [];
     }));
-    results.forEach(data => todasQuestoes.push(...data));
-    allLoadedQuestions = todasQuestoes;
-    cacheValid = true;
+    results.forEach(d => todasQuestoes.push(...d));
+    allLoadedQuestions = todasQuestoes; cacheValid = true;
   }
-
-  statsQuestoes = todasQuestoes;
-  renderStats(todasQuestoes);
+  
+  setTimeout(() => renderNovoAnalytics(todasQuestoes), 100);
 }
 
-function renderStats(questoes) {
+function calcTaxasOrganicas() {
+    let globAcertos = 0, globResp = 0;
+    Object.values(historicoData).forEach(day => { globAcertos += day.acertos || 0; globResp += day.respondidas || 0; });
+    if (globResp > 20) {
+        let acc = globAcertos / globResp;
+        // Revisão costuma ser um pouco maior que a média global, Nova um pouco menor
+        return { rev: Math.min(0.98, acc + 0.05), nova: Math.max(0.40, acc - 0.10) };
+    }
+    return { rev: 0.90, nova: 0.70 }; // default fallback
+}
+
+function renderNovoAnalytics(questoes) {
   const hoje = isoToday();
+  const hojeData = historicoData[hoje] || { respondidas: 0, acertos: 0, erros: 0, meta: 0, novas: 0 };
+  
+  // Destrói gráficos antigos se existirem
+  if(chartAgendaInstance) chartAgendaInstance.destroy();
+  if(chartCargaInstance) chartCargaInstance.destroy();
+  if(chartEsgotamentoInstance) chartEsgotamentoInstance.destroy();
+
+  // 1. Categorização
+  const cats = { novas: [], erradas: [], atrasadas: [], hoje: [], futuras: [] };
+  const contagemData = {};
+  
+  questoes.forEach(q => {
+      const data = q.proxima_revisao;
+      const streak = q.streak || 0;
+      if (!data) cats.novas.push(q);
+      else {
+          contagemData[data] = (contagemData[data] || 0) + 1;
+          if (data < hoje) streak === 0 ? cats.erradas.push(q) : cats.atrasadas.push(q);
+          else if (data === hoje) cats.hoje.push(q);
+          else cats.futuras.push(q);
+      }
+  });
+
+  const totalAtrasadas = cats.erradas.length + cats.atrasadas.length;
+  const cargaHoje = totalAtrasadas + cats.hoje.length;
+
+  // Renderiza HTML Base (Seção Hoje + Relatório Texto + Canvas Gráficos)
   const el = document.getElementById('stats-content');
-
-  const respondidas = questoes.filter(function(q) { return q.respondida; });
-  const totalRespondidas = respondidas.length;
-  const totalAcertos = respondidas.filter(function(q) { return q.acertou_ultima_vez; }).length;
-  const totalErros = totalRespondidas - totalAcertos;
-  const pctGlobal = totalRespondidas > 0 ? Math.round((totalAcertos / totalRespondidas) * 100) : 0;
-
-  const hojeData = historicoData[hoje] || { respondidas: 0, acertos: 0, erros: 0 };
   
-  const metaPct   = Math.min(100, Math.round(((hojeData.meta || 0) / metaDiaria) * 100));
-  const metaColor = metaPct >= 100 ? 'var(--green)' : metaPct >= 60 ? 'var(--accent)' : 'var(--orange)';
-  
-  const novasFeitas = hojeData.novas || 0;
-  const metaNovasPct   = Math.min(100, Math.round((novasFeitas / metaNovas) * 100));
-  const metaNovasColor = metaNovasPct >= 100 ? 'var(--green)' : metaNovasPct >= 60 ? 'var(--accent)' : 'var(--orange)';
-  const metaRevBatida  = (hojeData.meta || 0) >= metaDiaria;
-
-  const streakDias = calcularStreakDias();
-  const graficoHtml = renderGrafico14Dias();
-  const areasHtml = renderAreas(questoes);
-
-  el.innerHTML =
-    '<div class="stats-section" style="padding-top:20px">' +
-      '<div class="stats-section-title">📅 Hoje</div>' +
-      '<div class="stat-card wide" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-          '<span style="font-size:0.85rem;font-weight:600">🔁 Meta de revisões</span>' +
-          '<span id="meta-count" style="font-family:\'Space Mono\',monospace;font-size:0.85rem;color:' + metaColor + '">' + (hojeData.meta || 0) + ' / ' + metaDiaria + '</span>' +
-        '</div>' +
-        '<div class="meta-bar-wrap"><div class="meta-bar-fill" id="meta-bar" style="width:' + metaPct + '%;background:' + metaColor + '"></div></div>' +
-        '<div id="meta-texto" style="font-size:0.72rem;color:var(--text2);margin-top:4px">' + (metaPct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaDiaria - (hojeData.meta || 0)) + ' revisões') + '</div>' +
-        '<div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" id="meta-display">' +
-          '<span style="font-size:0.78rem;color:var(--text2)">Meta revisões:</span>' +
-          '<span style="font-family:\'Space Mono\',monospace;font-size:0.95rem;color:var(--accent);font-weight:700">' + metaDiaria + '</span>' +
-          '<button onclick="editarMeta()" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:0.78rem;padding:4px 10px;cursor:pointer">✏️ Editar</button>' +
-        '</div>' +
-        '<div style="display:none;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" id="meta-edit">' +
-          '<span style="font-size:0.78rem;color:var(--text2)">Meta revisões:</span>' +
-          '<input type="number" id="meta-input" min="1" max="999" value="' + metaDiaria + '" style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.95rem;padding:4px 8px;text-align:center">' +
-          '<button onclick="confirmarMeta()" style="margin-left:auto;background:var(--accent);border:none;border-radius:8px;color:white;font-size:0.78rem;padding:5px 12px;cursor:pointer;font-weight:600">OK</button>' +
-        '</div>' +
-        '<div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border)">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-            '<span style="font-size:0.85rem;font-weight:600">🌱 Meta de novas</span>' +
-            '<span id="meta-novas-count" style="font-family:\'Space Mono\',monospace;font-size:0.85rem;color:' + (metaRevBatida ? metaNovasColor : 'var(--text2)') + '">' + (metaRevBatida ? novasFeitas + ' / ' + metaNovas : '🔒 Liberada ao bater revisões') + '</span>' +
-          '</div>' +
-          '<div class="meta-bar-wrap"><div class="meta-bar-fill" id="meta-novas-bar" style="width:' + (metaRevBatida ? metaNovasPct : 0) + '%;background:' + metaNovasColor + '"></div></div>' +
-          '<div id="meta-novas-texto" style="font-size:0.72rem;color:var(--text2);margin-top:4px">' + (metaRevBatida ? (metaNovasPct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaNovas - novasFeitas) + ' novas') : 'Complete as revisões para liberar questões novas') + '</div>' +
-          '<div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" id="meta-novas-display">' +
-            '<span style="font-size:0.78rem;color:var(--text2)">Meta novas:</span>' +
-            '<span style="font-family:\'Space Mono\',monospace;font-size:0.95rem;color:var(--accent);font-weight:700">' + metaNovas + '</span>' +
-            '<button onclick="editarMetaNovas()" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:0.78rem;padding:4px 10px;cursor:pointer">✏️ Editar</button>' +
-          '</div>' +
-          '<div style="display:none;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)" id="meta-novas-edit">' +
-            '<span style="font-size:0.78rem;color:var(--text2)">Meta novas:</span>' +
-            '<input type="number" id="meta-novas-input" min="1" max="999" value="' + metaNovas + '" style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.95rem;padding:4px 8px;text-align:center">' +
-            '<button onclick="confirmarMetaNovas()" style="margin-left:auto;background:var(--accent);border:none;border-radius:8px;color:white;font-size:0.78rem;padding:5px 12px;cursor:pointer;font-weight:600">OK</button>' +
-          '</div>' +
-        '</div>' +
-
-      '</div>' +
-      '<div class="stats-grid">' +
-        '<div class="stat-card"><div class="stat-value" style="color:var(--accent)">' + hojeData.respondidas + '</div><div class="stat-label">Respondidas hoje</div></div>' +
-        '<div class="stat-card"><div class="stat-value" style="color:' + (streakDias >= 7 ? 'var(--orange)' : 'var(--accent)') + '">' + streakDias + '🔥</div><div class="stat-label">Dias seguidos</div></div>' +
-        '<div class="stat-card"><div class="stat-value" style="color:var(--green)">' + hojeData.acertos + '</div><div class="stat-label">Acertos hoje</div></div>' +
-        '<div class="stat-card"><div class="stat-value" style="color:var(--red)">' + hojeData.erros + '</div><div class="stat-label">Erros hoje</div></div>' +
-      '</div>' +
-    '</div>' +
-
-    '<div class="stats-section">' +
-      '<div class="stats-section-title">📊 Visão Geral (arquivos selecionados)</div>' +
-      '<div class="stats-grid">' +
-        '<div class="stat-card"><div class="stat-value" style="color:var(--accent)">' + pctGlobal + '%</div><div class="stat-label">% de acertos</div></div>' +
-        '<div class="stat-card"><div class="stat-value" style="color:var(--text)">' + totalRespondidas + '</div><div class="stat-label">Respondidas</div></div>' +
-        '<div class="stat-card"><div class="stat-value" style="color:var(--green)">' + totalAcertos + '</div><div class="stat-label">Acertos</div></div>' +
-        '<div class="stat-card"><div class="stat-value" style="color:var(--red)">' + totalErros + '</div><div class="stat-label">Erros</div></div>' +
-      '</div>' +
-    '</div>' +
-
-    '<div class="stats-section">' +
-      '<div class="stats-section-title">📈 Últimos 14 dias</div>' +
-      '<div class="stat-card wide" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px">' +
-        graficoHtml +
-      '</div>' +
-    '</div>' +
-
-    '<div class="stats-section" id="areas-section">' +
-      '<div class="stats-section-title">🎯 Por Área e Subárea</div>' +
-      '<div class="sort-tabs">' +
-        '<button class="sort-tab ' + (sortAreaMode==='menor'?'active':'') + '" onclick="setSortArea(\'menor\')">Menor acerto</button>' +
-        '<button class="sort-tab ' + (sortAreaMode==='maior'?'active':'') + '" onclick="setSortArea(\'maior\')">Maior acerto</button>' +
-        '<button class="sort-tab ' + (sortAreaMode==='az'?'active':'') + '" onclick="setSortArea(\'az\')">A-Z</button>' +
-      '</div>' +
-      '<div id="areas-list">' + areasHtml + '</div>' +
-    '</div>';
-}
-
-function editarMeta() {
-  document.getElementById('meta-display').style.display = 'none';
-  const ed = document.getElementById('meta-edit');
-  ed.style.display = 'flex';
-  document.getElementById('meta-input').focus();
-}
-
-function confirmarMeta() {
-  const input = document.getElementById('meta-input');
-  const val = parseInt(input.value);
-  if (!val || val < 1) return;
-  metaDiaria = val;
-  localStorage.setItem('quiz_meta_diaria', val);
-  
-  document.getElementById('meta-edit').style.display = 'none';
-  const disp = document.getElementById('meta-display');
-  disp.style.display = 'flex';
-  disp.querySelector('span:nth-child(2)').textContent = metaDiaria + ' questões';
-  
-  const hojeData = historicoData[isoToday()] || { respondidas: 0, acertos: 0, erros: 0 };
   const metaPct = Math.min(100, Math.round(((hojeData.meta || 0) / metaDiaria) * 100));
   const metaColor = metaPct >= 100 ? 'var(--green)' : metaPct >= 60 ? 'var(--accent)' : 'var(--orange)';
-  const bar = document.getElementById('meta-bar');
-  if (bar) { bar.style.width = metaPct + '%'; bar.style.background = metaColor; }
-  const metaTexto = document.getElementById('meta-texto');
-  if (metaTexto) metaTexto.textContent = metaPct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaDiaria - (hojeData.meta || 0)) + ' questões';
-  const metaCount = document.getElementById('meta-count');
-  if (metaCount) metaCount.textContent = (hojeData.meta || 0) + ' / ' + metaDiaria;
-  metaCount && (metaCount.style.color = metaColor);
-}
-
-function editarMetaNovas() {
-  document.getElementById('meta-novas-display').style.display = 'none';
-  const ed = document.getElementById('meta-novas-edit');
-  ed.style.display = 'flex';
-  document.getElementById('meta-novas-input').focus();
-}
-
-function confirmarMetaNovas() {
-  const input = document.getElementById('meta-novas-input');
-  const val = parseInt(input.value);
-  if (!val || val < 1) return;
-  metaNovas = val;
-  localStorage.setItem('quiz_meta_novas', val);
-  document.getElementById('meta-novas-edit').style.display = 'none';
-  document.getElementById('meta-novas-display').style.display = 'flex';
-  document.querySelector('#meta-novas-display span:nth-child(2)').textContent = metaNovas;
   
-  const hojeData = historicoData[isoToday()] || {};
-  const novasFeitas = hojeData.novas || 0;
-  const metaRevBatida = (hojeData.meta || 0) >= metaDiaria;
-  const pct = metaRevBatida ? Math.min(100, Math.round((novasFeitas / metaNovas) * 100)) : 0;
-  const cor = pct >= 100 ? 'var(--green)' : pct >= 60 ? 'var(--accent)' : 'var(--orange)';
-  const bar = document.getElementById('meta-novas-bar');
-  if (bar) { bar.style.width = pct + '%'; bar.style.background = cor; }
-  const txt = document.getElementById('meta-novas-texto');
-  if (txt) txt.textContent = metaRevBatida ? (pct >= 100 ? '🎉 Meta atingida!' : 'Faltam ' + (metaNovas - novasFeitas) + ' novas') : 'Complete as revisões para liberar questões novas';
-  const cnt = document.getElementById('meta-novas-count');
-  if (cnt) { cnt.textContent = metaRevBatida ? novasFeitas + ' / ' + metaNovas : '🔒 Liberada ao bater revisões'; cnt.style.color = metaRevBatida ? cor : 'var(--text2)'; }
-}
+  let html = `
+    <div class="stats-section" style="padding-top:20px">
+      <div class="stats-section-title">📅 Seu Progresso Hoje</div>
+      <div class="stat-card wide" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px">
+        
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:0.85rem;font-weight:600">🔁 Meta de revisões</span>
+          <span id="meta-count" style="font-family:'Space Mono',monospace;font-size:0.85rem;color:${metaColor}">${hojeData.meta} / ${metaDiaria}</span>
+        </div>
+        <div class="meta-bar-wrap"><div class="meta-bar-fill" id="meta-bar" style="width:${metaPct}%;background:${metaColor}"></div></div>
+        
+        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          <span style="font-size:0.78rem;color:var(--text2)">Config Meta Revisões: </span>
+          <input type="number" id="input-meta-rev" value="${metaDiaria}" style="width:60px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px;text-align:center" onchange="salvarMetas()">
+          <span style="font-size:0.78rem;color:var(--text2);margin-left:10px">Novas: </span>
+          <input type="number" id="input-meta-novas" value="${metaNovas}" style="width:60px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px;text-align:center" onchange="salvarMetas()">
+        </div>
+      </div>
+    </div>
 
-function calcularStreakDias() {
-  const hoje = isoToday();
-  let streak = 0;
-  let d = getBrazilDate();
-  
-  d.setDate(d.getDate() - 1);
+    <div class="stats-section">
+      <div class="stats-section-title">📊 Status Atual do Banco</div>
+      <div class="stat-card wide" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+        <div class="analytics-text-row"><span>📚 Total Selecionado:</span> <strong>${questoes.length}</strong></div>
+        <div class="analytics-text-row"><span>🌱 Novas Inéditas:</span> <strong>${cats.novas.length}</strong></div>
+        <div class="analytics-text-row"><span>🔙 Erradas (Atrasadas):</span> <strong style="color:var(--orange)">${cats.erradas.length}</strong></div>
+        <div class="analytics-text-row"><span>🔥 Atrasadas (Revisões):</span> <strong style="color:var(--red)">${cats.atrasadas.length}</strong></div>
+        <div class="analytics-text-row"><span>⚠️ Para Hoje:</span> <strong>${cats.hoje.length}</strong></div>
+        <div class="analytics-text-row"><span>📅 Futuras:</span> <strong>${cats.futuras.length}</strong></div>
+        <div class="analytics-text-row" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+          <span>💥 CARGA TOTAL PENDENTE:</span> <strong style="color:var(--accent);font-size:1.1rem">${cargaHoje}</strong>
+        </div>
+      </div>
+    </div>
 
-  while (true) {
-    const iso = toLocalISOString(d);
-    if (historicoData[iso] && (historicoData[iso].meta || 0) >= metaDiaria) {
-      streak++;
-      d.setDate(d.getDate() - 1);
-    } else { break; }
+    <div class="stats-section">
+      <div class="stats-section-title">📅 Fluxo de Revisões Atual</div>
+      <div class="canvas-container">
+        <canvas id="chartAgenda" height="200"></canvas>
+      </div>
+    </div>
+  `;
+
+  el.innerHTML = html;
+
+  // Dados Gráfico Agenda
+  const datasAgenda = Object.keys(contagemData).sort();
+  const limiteAgenda = 30;
+  const labelsAgenda = [];
+  const dadosAgenda = [];
+  const coresAgenda = [];
+
+  for(let i=0; i < Math.min(datasAgenda.length, limiteAgenda); i++) {
+      const dStr = datasAgenda[i];
+      const qtd = contagemData[dStr];
+      const [y, m, d] = dStr.split('-');
+      labelsAgenda.push(`${d}/${m}`);
+      dadosAgenda.push(qtd);
+      
+      if (dStr < hoje) coresAgenda.push('#e05b5b'); // vermelho
+      else if (dStr === hoje) coresAgenda.push('#e09b5b'); // laranja
+      else coresAgenda.push('#4caf82'); // verde
   }
 
-  const hojeData = historicoData[hoje];
-  if (hojeData && (hojeData.meta || 0) >= metaDiaria) streak++;
-
-  return streak;
-}
-
-function renderGrafico14Dias() {
-  const dias = [];
-  const base = getBrazilDate();
-  for (let i = 13; i >= 0; i--) {
-    const dd = new Date(base);
-    dd.setDate(dd.getDate() - i);
-    const iso = toLocalISOString(dd);
-    const label = (dd.getDate()) + '/' + (dd.getMonth()+1);
-    const val = historicoData[iso] ? historicoData[iso].respondidas : 0;
-    dias.push({ iso: iso, label: label, val: val });
-  }
-  const maxVal = Math.max.apply(null, dias.map(function(d) { return d.val; }).concat([1]));
-  const hoje = isoToday();
-  const bars = dias.map(function(d) {
-    const h = Math.round((d.val / maxVal) * 70);
-    const isHoje = d.iso === hoje;
-    return '<div class="bar-col">' +
-      '<div class="bar-fill ' + (isHoje ? 'today' : '') + '" style="height:' + h + 'px" title="' + d.val + ' questões"></div>' +
-      '<div class="bar-label">' + d.label + '</div>' +
-    '</div>';
-  }).join('');
-  return '<div class="bar-chart">' + bars + '</div>' +
-    '<div style="font-size:0.72rem;color:var(--text2);margin-top:8px;text-align:center">Barra rosa = hoje · Meta: ' + metaDiaria + ' questões/dia</div>';
-}
-
-function renderAreas(questoes) {
-  const areas = {};
-  questoes.forEach(function(q) {
-    const area = q.grande_area || 'Sem área';
-    const sub = q.sub_area || 'Sem subárea';
-    if (!areas[area]) areas[area] = {};
-    if (!areas[area][sub]) areas[area][sub] = { total: 0, acertos: 0 };
-    if (q.respondida) {
-      areas[area][sub].total++;
-      if (q.acertou_ultima_vez) areas[area][sub].acertos++;
-    }
+  const ctxAgenda = document.getElementById('chartAgenda').getContext('2d');
+  chartAgendaInstance = new Chart(ctxAgenda, {
+      type: 'bar',
+      data: {
+          labels: labelsAgenda,
+          datasets: [{ label: 'Questões', data: dadosAgenda, backgroundColor: coresAgenda, borderRadius: 4 }]
+      },
+      options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { grid: { display: false } }, y: { beginAtZero: true } }
+      }
   });
 
-  var areaRespondidas = [];
-  var areaNaoRespondidas = [];
-  Object.keys(areas).forEach(function(area) {
-    const subs = areas[area];
-    const total = Object.values(subs).reduce(function(s, v) { return s + v.total; }, 0);
-    const acertos = Object.values(subs).reduce(function(s, v) { return s + v.acertos; }, 0);
-    const pct = total > 0 ? Math.round((acertos / total) * 100) : 0;
-    const entry = { area: area, subs: subs, total: total, acertos: acertos, pct: pct };
-    if (total > 0) areaRespondidas.push(entry);
-    else areaNaoRespondidas.push(entry);
-  });
+  // --- MOTOR DE SIMULAÇÃO ---
+  setTimeout(() => renderSimulacao(cats, questoes.length), 50);
+}
 
-  if (sortAreaMode === 'menor') areaRespondidas.sort(function(a, b) { return a.pct - b.pct; });
-  else if (sortAreaMode === 'maior') areaRespondidas.sort(function(a, b) { return b.pct - a.pct; });
-  else areaRespondidas.sort(function(a, b) { return a.area.localeCompare(b.area); });
-  areaNaoRespondidas.sort(function(a, b) { return a.area.localeCompare(b.area); });
+function salvarMetas() {
+    const r = parseInt(document.getElementById('input-meta-rev').value);
+    const n = parseInt(document.getElementById('input-meta-novas').value);
+    if(r > 0) { metaDiaria = r; localStorage.setItem('quiz_meta_diaria', r); }
+    if(n > 0) { metaNovas = n; localStorage.setItem('quiz_meta_novas', n); }
+    showToast('Metas atualizadas! Recarregando...');
+    setTimeout(showStats, 800);
+}
 
-  function renderAreaItem(a, i) {
-    const pctColor = a.pct >= 70 ? 'var(--green)' : a.pct >= 40 ? 'var(--orange)' : 'var(--red)';
+function renderSimulacao(cats, totalQuestoes) {
+    const taxas = calcTaxasOrganicas();
+    const DIAS_SIM = 90;
+    const CAPACIDADE_TOTAL = metaDiaria + metaNovas;
+    const ALVO_REVISOES = metaDiaria;
+    
+    // Configura Seed para estabilidade
+    seededRandom = LCG(42);
 
-    const subEntries = Object.entries(a.subs).map(function(entry) {
-      const sub = entry[0]; const s = entry[1];
-      return { sub: sub, total: s.total, acertos: s.acertos, pct: s.total > 0 ? Math.round((s.acertos / s.total) * 100) : -1 };
+    let poolNovas = cats.novas.length;
+    let cardsAtivos = [];
+    
+    // Inicializa filas do dia 1
+    ['erradas', 'atrasadas', 'hoje'].forEach(cat => {
+        cats[cat].forEach(q => cardsAtivos.push({ next: 1, streak: q.streak||0, visto: false }));
     });
-    if (sortAreaMode === 'menor') subEntries.sort(function(a, b) { return (a.pct < 0 ? 999 : a.pct) - (b.pct < 0 ? 999 : b.pct); });
-    else if (sortAreaMode === 'maior') subEntries.sort(function(a, b) { return (b.pct < 0 ? -1 : b.pct) - (a.pct < 0 ? -1 : a.pct); });
-    else subEntries.sort(function(a, b) { return a.sub.localeCompare(b.sub); });
+    
+    const parseDate = (s) => { const [y,m,d] = s.split('-'); return new Date(y, m-1, d); };
+    const dateHoje = getBrazilDate();
+    dateHoje.setHours(0,0,0,0);
+    
+    cats.futuras.forEach(q => {
+        const dStr = q.proxima_revisao;
+        if(dStr) {
+            const dObj = parseDate(dStr);
+            const diff = Math.max(1, Math.floor((dObj - dateHoje) / 86400000));
+            cardsAtivos.push({ next: diff, streak: q.streak||0, visto: false });
+        }
+    });
 
-    const subsHtml = subEntries.map(function(s) {
-      const nr = s.pct < 0;
-      const sc = nr ? 'var(--text2)' : s.pct >= 70 ? 'var(--green)' : s.pct >= 40 ? 'var(--orange)' : 'var(--red)';
-      return '<div class="subarea-item">' +
-        '<span class="subarea-name">' + escHtml(s.sub) + '</span>' +
-        (nr ? '<span style="font-size:0.72rem;color:var(--text2);margin-right:8px">N/R</span>' :
-              '<span style="font-size:0.72rem;color:var(--text2);margin-right:8px">' + s.acertos + '/' + s.total + '</span>') +
-        '<span class="subarea-pct" style="color:' + sc + '">' + (nr ? 'N/R' : s.pct + '%') + '</span>' +
-      '</div>';
-    }).join('');
+    const getInterval = (s) => ({0:1, 1:1, 2:3, 3:7, 4:15, 5:30}[s] || 45);
+    
+    const histSim = [];
+    let cicloAtual = 1;
+    const registroCiclos = [];
+    
+    for (let dia = 1; dia <= DIAS_SIM; dia++) {
+        let filaRev = cardsAtivos.filter(c => c.next <= dia).sort((a,b) => a.next - b.next);
+        let revDisp = filaRev.length;
+        let capRestante = CAPACIDADE_TOTAL;
+        
+        let revFeitas = Math.min(ALVO_REVISOES, revDisp);
+        capRestante -= revFeitas;
+        
+        let novasFeitas = Math.min(poolNovas, capRestante);
+        capRestante -= novasFeitas;
+        
+        if (capRestante > 0 && revDisp > revFeitas) {
+            let extra = Math.min(revDisp - revFeitas, capRestante);
+            revFeitas += extra;
+        }
+        
+        for (let i=0; i < revFeitas; i++) {
+            let card = filaRev[i];
+            if (seededRandom() <= taxas.rev) card.streak++; else card.streak = 0;
+            card.next = dia + getInterval(card.streak);
+            card.visto = true;
+        }
+        
+        for (let i=0; i < novasFeitas; i++) {
+            poolNovas--;
+            let streak = seededRandom() <= taxas.nova ? 1 : 0;
+            cardsAtivos.push({ next: dia + getInterval(streak), streak: streak, visto: true });
+        }
+        
+        histSim.push({ 
+            dia, 
+            revFeitas, 
+            novasFeitas, 
+            atrasadas: (revDisp - revFeitas),
+            restantes: poolNovas
+        });
+        
+        // Verifica ciclo
+        if (poolNovas === 0 && cardsAtivos.length > 0 && cardsAtivos.every(c => c.visto)) {
+            registroCiclos.push({ ciclo: cicloAtual, dia });
+            cardsAtivos.forEach(c => c.visto = false);
+            cicloAtual++;
+        }
+    }
 
-    const pctLabel = a.total === 0 ? 'N/R' : a.pct + '%';
-    const pctC = a.total === 0 ? 'var(--text2)' : pctColor;
-    const barW = a.total === 0 ? 0 : a.pct;
+    // Renderiza HTML do Simulador
+    const el = document.getElementById('stats-content');
+    const simHtml = `
+      <div class="stats-section">
+        <div class="stats-section-title">🚀 Projeção Orgânica (${DIAS_SIM} dias)</div>
+        <div style="font-size:0.75rem; color:var(--text2); margin-bottom:10px;">
+          Taxas calculadas via Histórico Drive: <b style="color:var(--green)">Revisão ${(taxas.rev*100).toFixed(0)}%</b> | <b style="color:var(--accent)">Novas ${(taxas.nova*100).toFixed(0)}%</b>
+        </div>
+        <div class="canvas-container">
+          <canvas id="chartCarga" height="250"></canvas>
+        </div>
+      </div>
 
-    return '<div class="area-item">' +
-      '<div class="area-header" onclick="toggleArea(\'area-' + i + '\')">' +
-        '<span class="area-name">' + escHtml(a.area) + '</span>' +
-        '<span style="font-size:0.72rem;color:var(--text2);margin-right:8px">' + (a.total === 0 ? 'N/R' : a.acertos + '/' + a.total) + '</span>' +
-        '<span class="area-pct" style="color:' + pctC + '">' + pctLabel + '</span>' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>' +
-      '</div>' +
-      '<div class="area-mini-bar"><div class="area-mini-bar-fill" style="width:' + barW + '%;background:' + pctC + '"></div></div>' +
-      '<div class="subarea-list" id="area-' + i + '">' + subsHtml + '</div>' +
-    '</div>';
-  }
+      <div class="stats-section">
+        <div class="stats-section-title">🔥 Esgotamento do Banco e Ciclos</div>
+        <div class="canvas-container">
+          <canvas id="chartEsgotamento" height="200"></canvas>
+        </div>
+      </div>
 
-  var html = areaRespondidas.map(function(a, i) { return renderAreaItem(a, i); }).join('');
+      <div class="stats-section" style="padding-bottom:20px;">
+        <div class="stat-card wide" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:left">
+          <div style="font-weight:600; font-size:0.9rem; margin-bottom:10px; color:var(--accent)">🎯 Relatório de Ciclos Reais</div>
+          <div id="relatorio-ciclos" style="font-size:0.8rem; color:var(--text2); line-height:1.6"></div>
+        </div>
+      </div>
+    `;
+    
+    el.innerHTML += simHtml;
 
-  if (areaNaoRespondidas.length > 0) {
-    html += '<div style="margin-top:8px">' +
-      '<div onclick="toggleArea(\'areas-nr\')" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border)">' +
-        '<span style="font-size:0.78rem;color:var(--text2);flex:1">N/R — Não respondidas (' + areaNaoRespondidas.length + ' área' + (areaNaoRespondidas.length > 1 ? 's' : '') + ')</span>' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>' +
-      '</div>' +
-      '<div id="areas-nr" style="display:none">' +
-        areaNaoRespondidas.map(function(a, i) { return renderAreaItem(a, 'nr-' + i); }).join('') +
-      '</div>' +
-    '</div>';
-  }
+    // Draw Carga
+    const ctxCarga = document.getElementById('chartCarga').getContext('2d');
+    chartCargaInstance = new Chart(ctxCarga, {
+        type: 'bar',
+        data: {
+            labels: histSim.map(h => `D+${h.dia}`),
+            datasets: [
+                { label: 'Revisões Feitas', data: histSim.map(h => h.revFeitas), backgroundColor: '#4caf82', stacked: true },
+                { label: 'Novas Feitas', data: histSim.map(h => h.novasFeitas), backgroundColor: '#5b8dee', stacked: true },
+                { label: 'Atrasadas/Fila', data: histSim.map(h => h.atrasadas), type: 'line', borderColor: '#e05b5b', borderWidth: 2, pointRadius: 0 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                x: { stacked: true, grid: { display: false }, ticks: { maxTicksLimit: 15 } },
+                y: { stacked: true, beginAtZero: true }
+            }
+        }
+    });
 
-  return html;
+    // Draw Esgotamento
+    const ctxEsg = document.getElementById('chartEsgotamento').getContext('2d');
+    chartEsgotamentoInstance = new Chart(ctxEsg, {
+        type: 'bar',
+        data: {
+            labels: histSim.map(h => `D+${h.dia}`),
+            datasets: [
+                { label: 'Novas Restantes', data: histSim.map(h => h.restantes), backgroundColor: '#e09b5b' }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 15 } },
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // Relatório de Ciclos
+    let ciclosHtml = "";
+    if (registroCiclos.length === 0) {
+        ciclosHtml = "A simulação não completou 100% do banco dentro de " + DIAS_SIM + " dias.";
+    } else {
+        registroCiclos.slice(0, 5).forEach(c => {
+            ciclosHtml += `<b>${c.ciclo}º Ciclo</b>: O banco foi varrido completamente no <b>Dia ${c.dia}</b> da projeção.<br>`;
+        });
+        if (registroCiclos.length >= 5) {
+            ciclosHtml += `<hr style="border:none;border-top:1px dashed var(--border);margin:10px 0"><span style="color:var(--green);font-weight:600">✔️ O banco será percorrido 5 vezes em ${registroCiclos[4].dia} dias!</span>`;
+        } else {
+            ciclosHtml += `<hr style="border:none;border-top:1px dashed var(--border);margin:10px 0"><span style="color:var(--orange)">⚠️ O limite de ${DIAS_SIM} dias não foi suficiente para 5 ciclos inteiros.</span>`;
+        }
+    }
+    document.getElementById('relatorio-ciclos').innerHTML = ciclosHtml;
 }
 
-function toggleArea(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.toggle('open');
-}
-
-function setSortArea(mode) {
-  sortAreaMode = mode;
-  document.querySelectorAll('.sort-tab').forEach(function(t) { t.classList.remove('active'); });
-  const tabs = document.querySelectorAll('.sort-tab');
-  const modeMap = { menor: 0, maior: 1, az: 2 };
-  if (tabs[modeMap[mode]]) tabs[modeMap[mode]].classList.add('active');
-  const list = document.getElementById('areas-list');
-  if (list) list.innerHTML = renderAreas(statsQuestoes);
+function renderStatsPreview(questions) {
+  const s = { novas:0, erradas:0, hoje:0, futuras:0 }; const hoje = isoToday();
+  questions.forEach(q => { if (!q.proxima_revisao) s.novas++; else if (q.proxima_revisao <= hoje) (q.streak||0)===0 ? s.erradas++ : s.hoje++; else s.futuras++; });
+  document.getElementById('stats-preview').innerHTML = `<h3 class="section-title">Estatísticas do Filtro (${questions.length})</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700;color:var(--orange)">${s.erradas}</div><div style="font-size:0.72rem;color:var(--text2)">🔙 Erradas</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700;color:var(--green)">${s.novas}</div><div style="font-size:0.72rem;color:var(--text2)">🌱 Novas</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700;color:var(--red)">${s.hoje}</div><div style="font-size:0.72rem;color:var(--text2)">⚠️ Para Hoje</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700;color:var(--text2)">${s.futuras}</div><div style="font-size:0.72rem;color:var(--text2)">📅 Agendadas</div></div></div>`;
 }
 
 </script>
-
-<!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-
 </body>
 </html>
