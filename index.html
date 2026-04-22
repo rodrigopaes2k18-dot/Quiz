@@ -440,7 +440,7 @@
     width: 100%;
     margin-top: 10px;
     padding: 10px;
-    background: white; /* Gráficos ficam melhores num fundo claro ou você pode ajustar via Chart.js para dark mode */
+    background: white; /* Gráficos ficam melhores num fundo claro */
     border-radius: var(--radius);
   }
 </style>
@@ -890,7 +890,8 @@ async function renderQuestion() {
   const mFeitas = (historicoData[hojeStr]?.meta) || 0, mPct = Math.min(100, Math.round((mFeitas/metaDiaria)*100));
   if (mFeitas >= metaDiaria) {
       const nF = (historicoData[hojeStr]?.novas)||0;
-      document.getElementById('meta-progress-fill').style.width = Math.min(100, Math.round((nF/metaNovas)*100)) + '%';
+      const nPct = metaNovas > 0 ? Math.round((nF/metaNovas)*100) : 100;
+      document.getElementById('meta-progress-fill').style.width = Math.min(100, nPct) + '%';
       document.getElementById('meta-progress-fill').style.background = 'linear-gradient(90deg, var(--accent2), var(--accent))';
       document.getElementById('meta-progress-text').textContent = '🌱 Novas: ' + nF + '/' + metaNovas;
   } else {
@@ -1062,7 +1063,6 @@ function renderNovoAnalytics(questoes) {
   const totalAtrasadas = cats.erradas.length + cats.atrasadas.length;
   const cargaHoje = totalAtrasadas + cats.hoje.length;
 
-  // Renderiza HTML Base (Seção Hoje + Relatório Texto + Canvas Gráficos)
   const el = document.getElementById('stats-content');
   
   const metaPct = Math.min(100, Math.round(((hojeData.meta || 0) / metaDiaria) * 100));
@@ -1081,9 +1081,9 @@ function renderNovoAnalytics(questoes) {
         
         <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
           <span style="font-size:0.78rem;color:var(--text2)">Config Meta Revisões: </span>
-          <input type="number" id="input-meta-rev" value="${metaDiaria}" style="width:60px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px;text-align:center" onchange="salvarMetas()">
+          <input type="number" id="input-meta-rev" value="${metaDiaria}" min="1" style="width:60px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px;text-align:center" onchange="salvarMetas()">
           <span style="font-size:0.78rem;color:var(--text2);margin-left:10px">Novas: </span>
-          <input type="number" id="input-meta-novas" value="${metaNovas}" style="width:60px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px;text-align:center" onchange="salvarMetas()">
+          <input type="number" id="input-meta-novas" value="${metaNovas}" min="0" style="width:60px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px;text-align:center" onchange="salvarMetas()">
         </div>
       </div>
     </div>
@@ -1111,9 +1111,10 @@ function renderNovoAnalytics(questoes) {
     </div>
   `;
 
+  // LIMPA o html e injeta os containers
   el.innerHTML = html;
 
-  // Dados Gráfico Agenda
+  // Renderiza Gráfico 1 (Agenda)
   const datasAgenda = Object.keys(contagemData).sort();
   const limiteAgenda = 30;
   const labelsAgenda = [];
@@ -1127,9 +1128,9 @@ function renderNovoAnalytics(questoes) {
       labelsAgenda.push(`${d}/${m}`);
       dadosAgenda.push(qtd);
       
-      if (dStr < hoje) coresAgenda.push('#e05b5b'); // vermelho
-      else if (dStr === hoje) coresAgenda.push('#e09b5b'); // laranja
-      else coresAgenda.push('#4caf82'); // verde
+      if (dStr < hoje) coresAgenda.push('#e05b5b'); 
+      else if (dStr === hoje) coresAgenda.push('#e09b5b'); 
+      else coresAgenda.push('#4caf82'); 
   }
 
   const ctxAgenda = document.getElementById('chartAgenda').getContext('2d');
@@ -1146,32 +1147,34 @@ function renderNovoAnalytics(questoes) {
       }
   });
 
-  // --- MOTOR DE SIMULAÇÃO ---
-  setTimeout(() => renderSimulacao(cats, questoes.length), 50);
+  // --- RODA A SIMULAÇÃO (SEM DESTRUIR O DOM COM innerHTML += ) ---
+  setTimeout(() => renderSimulacao(cats, el), 50);
 }
 
 function salvarMetas() {
     const r = parseInt(document.getElementById('input-meta-rev').value);
     const n = parseInt(document.getElementById('input-meta-novas').value);
-    if(r > 0) { metaDiaria = r; localStorage.setItem('quiz_meta_diaria', r); }
-    if(n > 0) { metaNovas = n; localStorage.setItem('quiz_meta_novas', n); }
+    
+    if(r > 0 && !isNaN(r)) { metaDiaria = r; localStorage.setItem('quiz_meta_diaria', r); }
+    // Agora o "n" (novas) aceita zero e salva!
+    if(n >= 0 && !isNaN(n)) { metaNovas = n; localStorage.setItem('quiz_meta_novas', n); }
+    
     showToast('Metas atualizadas! Recarregando...');
     setTimeout(showStats, 800);
 }
 
-function renderSimulacao(cats, totalQuestoes) {
+function renderSimulacao(cats, containerElement) {
     const taxas = calcTaxasOrganicas();
     const DIAS_SIM = 90;
     const CAPACIDADE_TOTAL = metaDiaria + metaNovas;
     const ALVO_REVISOES = metaDiaria;
     
-    // Configura Seed para estabilidade
+    // Seed para que o gráfico não fique tremendo a cada visualização (mantém coerência)
     seededRandom = LCG(42);
 
     let poolNovas = cats.novas.length;
     let cardsAtivos = [];
     
-    // Inicializa filas do dia 1
     ['erradas', 'atrasadas', 'hoje'].forEach(cat => {
         cats[cat].forEach(q => cardsAtivos.push({ next: 1, streak: q.streak||0, visto: false }));
     });
@@ -1232,7 +1235,6 @@ function renderSimulacao(cats, totalQuestoes) {
             restantes: poolNovas
         });
         
-        // Verifica ciclo
         if (poolNovas === 0 && cardsAtivos.length > 0 && cardsAtivos.every(c => c.visto)) {
             registroCiclos.push({ ciclo: cicloAtual, dia });
             cardsAtivos.forEach(c => c.visto = false);
@@ -1240,8 +1242,20 @@ function renderSimulacao(cats, totalQuestoes) {
         }
     }
 
-    // Renderiza HTML do Simulador
-    const el = document.getElementById('stats-content');
+    let ciclosHtml = "";
+    if (registroCiclos.length === 0) {
+        ciclosHtml = "A simulação não completou 100% do banco dentro de " + DIAS_SIM + " dias.";
+    } else {
+        registroCiclos.slice(0, 5).forEach(c => {
+            ciclosHtml += `<b>${c.ciclo}º Ciclo</b>: O banco foi varrido completamente no <b>Dia ${c.dia}</b> da projeção.<br>`;
+        });
+        if (registroCiclos.length >= 5) {
+            ciclosHtml += `<hr style="border:none;border-top:1px dashed var(--border);margin:10px 0"><span style="color:var(--green);font-weight:600">✔️ O banco será percorrido 5 vezes em ${registroCiclos[4].dia} dias!</span>`;
+        } else {
+            ciclosHtml += `<hr style="border:none;border-top:1px dashed var(--border);margin:10px 0"><span style="color:var(--orange)">⚠️ O limite de ${DIAS_SIM} dias não foi suficiente para 5 ciclos inteiros.</span>`;
+        }
+    }
+
     const simHtml = `
       <div class="stats-section">
         <div class="stats-section-title">🚀 Projeção Orgânica (${DIAS_SIM} dias)</div>
@@ -1263,14 +1277,15 @@ function renderSimulacao(cats, totalQuestoes) {
       <div class="stats-section" style="padding-bottom:20px;">
         <div class="stat-card wide" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:left">
           <div style="font-weight:600; font-size:0.9rem; margin-bottom:10px; color:var(--accent)">🎯 Relatório de Ciclos Reais</div>
-          <div id="relatorio-ciclos" style="font-size:0.8rem; color:var(--text2); line-height:1.6"></div>
+          <div id="relatorio-ciclos" style="font-size:0.8rem; color:var(--text2); line-height:1.6">${ciclosHtml}</div>
         </div>
       </div>
     `;
     
-    el.innerHTML += simHtml;
+    // O pulo do gato para o Canvas não sumir: usar insertAdjacentHTML no lugar de innerHTML +=
+    containerElement.insertAdjacentHTML('beforeend', simHtml);
 
-    // Draw Carga
+    // Agora desenhamos os gráficos simulados tranquilamente
     const ctxCarga = document.getElementById('chartCarga').getContext('2d');
     chartCargaInstance = new Chart(ctxCarga, {
         type: 'bar',
@@ -1291,7 +1306,6 @@ function renderSimulacao(cats, totalQuestoes) {
         }
     });
 
-    // Draw Esgotamento
     const ctxEsg = document.getElementById('chartEsgotamento').getContext('2d');
     chartEsgotamentoInstance = new Chart(ctxEsg, {
         type: 'bar',
@@ -1309,22 +1323,6 @@ function renderSimulacao(cats, totalQuestoes) {
             }
         }
     });
-
-    // Relatório de Ciclos
-    let ciclosHtml = "";
-    if (registroCiclos.length === 0) {
-        ciclosHtml = "A simulação não completou 100% do banco dentro de " + DIAS_SIM + " dias.";
-    } else {
-        registroCiclos.slice(0, 5).forEach(c => {
-            ciclosHtml += `<b>${c.ciclo}º Ciclo</b>: O banco foi varrido completamente no <b>Dia ${c.dia}</b> da projeção.<br>`;
-        });
-        if (registroCiclos.length >= 5) {
-            ciclosHtml += `<hr style="border:none;border-top:1px dashed var(--border);margin:10px 0"><span style="color:var(--green);font-weight:600">✔️ O banco será percorrido 5 vezes em ${registroCiclos[4].dia} dias!</span>`;
-        } else {
-            ciclosHtml += `<hr style="border:none;border-top:1px dashed var(--border);margin:10px 0"><span style="color:var(--orange)">⚠️ O limite de ${DIAS_SIM} dias não foi suficiente para 5 ciclos inteiros.</span>`;
-        }
-    }
-    document.getElementById('relatorio-ciclos').innerHTML = ciclosHtml;
 }
 
 function renderStatsPreview(questions) {
